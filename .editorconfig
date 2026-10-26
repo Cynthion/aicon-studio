@@ -1,0 +1,26 @@
+root = true
+
+[*]
+charset = utf-8
+# configures Prettier's tabWidth
+tab_width = 2
+# configures Prettier's tabWidth and tabs
+indent_size = 2
+indent_style = space
+insert_final_newline = true
+# configures Prettier's printWidth
+max_line_length = 120
+# configures Prettier's endOfLine
+end_of_line = lf
+trim_trailing_whitespace = true
+
+[*.html]
+max_line_length = 160
+
+[*.ts]
+quote_type = single
+
+[*.md]
+indent_style = space
+max_line_length = off
+trim_trailing_whitespace = false

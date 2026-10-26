@@ -1,0 +1,31 @@
+{
+  "target": "./icons",
+  "quality": "medium",
+  "icons": [
+    {
+      "stem": "home",
+      "subject": "a house"
+    },
+    {
+      "stem": "search",
+      "subject": "a magnifying glass"
+    },
+    {
+      "stem": "settings",
+      "subject": "a gear"
+    },
+    {
+      "stem": "check",
+      "subject": "a single check mark, no frame"
+    },
+    {
+      "stem": "chevron-right",
+      "subject": "a chevron pointing right"
+    },
+    {
+      "stem": "chevron-down",
+      "from": "chevron-right",
+      "rotate": 90
+    }
+  ]
+}

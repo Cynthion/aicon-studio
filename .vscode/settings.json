@@ -1,0 +1,54 @@
+{
+  /* VS CODE */
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+    "source.fixAll.eslint": "explicit"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode", // Prettier as default formatter
+  "editor.formatOnSave": true,
+  "editor.trimAutoWhitespace": true,
+
+  "files.trimTrailingWhitespace": true,
+
+  /* LANGUAGES */
+  "[markdown]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.wordWrap": "off"
+  },
+  "js/ts.preferences.quoteStyle": "single",
+  "js/ts.preferences.importModuleSpecifier": "relative",
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+
+  /* EXTENSIONS */
+  "eslint.enable": true,
+  "eslint.useFlatConfig": true,
+  "eslint.debug": false,
+  "eslint.validate": ["javascript", "typescript"],
+
+  /* Markdown Validation */
+  "markdown.validate.enabled": true,
+  "markdown.validate.fileLinks.enabled": "error",
+  "markdown.validate.fragmentLinks.enabled": "error",
+  "markdown.validate.referenceLinks.enabled": "error",
+
+  /* Markdown Lint */
+  /* Rules in .markdownlint.json, exclusions in .markdownlint-cli2.jsonc */
+  "markdownlint.lintWorkspaceGlobs": [
+    "**/*.md",
+    "!**/node_modules/**",
+    "!.plan/**",
+    "!.research/**",
+    "!example/runs/**"
+  ],
+
+  // Peacock
+  "workbench.colorCustomizations": {
+    "commandCenter.border": "#e7e7e799",
+    "titleBar.activeBackground": "#ff8559",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#ff855999",
+    "titleBar.inactiveForeground": "#e7e7e799",
+    "commandCenter.foreground": "#e7e7e7"
+  }
+}

@@ -1,0 +1,12 @@
+# Dependency Directories
+node_modules
+
+# Compiled Output
+dist
+
+# npm owns the lockfile
+package-lock.json
+
+# Drawn sets and the golden fixtures, byte for byte as the pipeline wrote them
+example/runs
+test/fixtures

@@ -1,0 +1,51 @@
+{
+  "run": "2026-10-24-0003",
+  "style": "soft",
+  "imageModel": "gpt-image-2.5-sunburst",
+  "quality": "medium",
+  "prompt": "# Soft\n\nCreate a minimal UI icon of {subject} in a soft, rounded and friendly style for a calm, caring web application.\n\n## Look\n\n- Use a bold uniform stroke with fully rounded caps and joins, and generous rounded corners on every shape; no sharp points.\n- Give shapes gentle, slightly plump proportions, so the icon feels warm and approachable without becoming childish.\n- Keep the line weight consistent, as in one cohesive icon set.\n- Keep the icon simple, balanced, highly legible and vector-friendly, with a clear silhouette, minimal internal detail and no tiny fragile details.\n- Centered on a square canvas, filling about 80% of it, suitable for SVG and small icon sizes such as 24 px.\n\n## Outlines\n\n- Draw outlines only: every shape is an empty outline with a white inside, never a solid black area, except for dots.\n- The icon must also work filled solid later, so draw every outer contour, including every circle, ring and frame, as one continuous closed line with no gap and no break.\n- A symbol made of single strokes, such as a check mark, an arrow or a character, stays a set of strokes.\n\n## Colour And Limits\n\n- Single colour: solid black on a transparent background.\n- No shading, no gradients, no 3D, no texture, no frame, no background, no words or captions.\n- Avoid photorealism, cartoon faces, mascots, thin hairlines and excessive detail.",
+  "icons": [
+    {
+      "stem": "home",
+      "subject": "home",
+      "referenced": false
+    },
+    {
+      "stem": "search",
+      "subject": "search",
+      "referenced": false
+    },
+    {
+      "stem": "settings",
+      "subject": "settings",
+      "referenced": false
+    },
+    {
+      "stem": "check",
+      "subject": "confirm, done",
+      "referenced": false
+    },
+    {
+      "stem": "more",
+      "subject": "more options",
+      "referenced": false
+    },
+    {
+      "stem": "help",
+      "subject": "help",
+      "referenced": false
+    },
+    {
+      "stem": "constitution-tracker",
+      "subject": "the constitution of a patient among the five elements",
+      "referenced": false
+    },
+    {
+      "stem": "chevron-right",
+      "subject": "a chevron pointing right",
+      "referenced": false
+    }
+  ],
+  "failed": [],
+  "flips": {}
+}

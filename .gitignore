@@ -1,0 +1,30 @@
+# Compiled output
+dist
+
+# Node
+node_modules
+npm-debug.log
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+
+# Miscellaneous
+/.vitest
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Aicon Studio: the sets a studio draws into the example project
+example/runs/
+
+# Claude Code
+.claude/settings.local.json
+.research/
+.plan/
+.playwright-mcp/

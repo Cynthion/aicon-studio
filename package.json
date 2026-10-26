@@ -1,0 +1,48 @@
+{
+  "name": "@cynthion/aicon-studio",
+  "version": "0.0.0",
+  "description": "Draws candidate icon sets with an image model, compares them and adopts one into your project.",
+  "license": "GPL-2.0-only",
+  "author": "Christian Lüthold",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Cynthion/aicon-studio.git"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "bin": {
+    "aicon-studio": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "start": "node src/cli.ts example",
+    "build": "tsc -p tsconfig.build.json && cp src/studio.html dist/",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "prettier:check": "prettier --check .",
+    "prettier:write": "prettier --write .",
+    "docs:lint": "markdownlint-cli2"
+  },
+  "dependencies": {
+    "playwright": "1.63.0",
+    "pngjs": "7.0.0",
+    "potrace": "2.1.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "@types/pngjs": "6.0.5",
+    "eslint": "10.13.0",
+    "markdownlint-cli2": "0.24.0",
+    "markdownlint-rule-relative-links": "5.1.4",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vitest": "5.0.5"
+  }
+}

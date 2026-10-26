@@ -1,0 +1,46 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "group:allNonMajor", "security:minimumReleaseAgeNpm"],
+  "schedule": ["* * 1 * *"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "MCP servers that npx runs at the version pinned in .mcp.json",
+      "managerFilePatterns": ["/^\\.mcp\\.json$/"],
+      "matchStrings": ["\"(?<depName>(?:@[\\w.-]+/)?[\\w.-]+)@(?<currentValue>\\d[\\w.-]*)\""],
+      "datasourceTemplate": "npm"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": ["eslint", "@eslint/js", "typescript-eslint"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "ESLint"
+    },
+    {
+      "matchPackageNames": ["prettier"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "Prettier"
+    },
+    {
+      "matchPackageNames": ["vitest"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "Vitest"
+    },
+    {
+      "description": "Playwright's Chromium rasterizes every fill, so a bump can change the golden fixtures, see .documentation/impl/testing.md",
+      "matchPackageNames": ["playwright"],
+      "groupName": "Playwright"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "Ceiling: typescript-eslint peers typescript <6.1",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<6.1"
+    }
+  ]
+}

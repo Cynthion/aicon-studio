@@ -1,0 +1,3 @@
+# Note: Also update .nvmrc, which the workflows read, and engines in package.json.
+
+nodejs 24.21.0

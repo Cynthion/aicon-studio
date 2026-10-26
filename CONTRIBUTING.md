@@ -14,6 +14,18 @@ Contributions are welcome. This repository holds the `aicon-studio` command line
 
 Documentation lives in `.documentation/`, split by audience: `user/` for whoever runs the studio, `tech/` for maintainers, `impl/` for whoever works the repository. The index is [`.documentation/README.md`](.documentation/README.md) and the authoring rules are in [`.documentation/impl/documentation.md`](.documentation/impl/documentation.md). Read them before editing any Markdown. `npm run docs:lint` checks style and links.
 
+## AI Tooling
+
+The repository is set up for Claude Code, described in [`.documentation/impl/ai-harness.md`](.documentation/impl/ai-harness.md). The committed `.claude/settings.json` approves the MCP servers of `.mcp.json`; these steps make them usable, once per machine. `claude mcp list` reports `Connected` only for a server whose tools work.
+
+| Server        | Step                                                                                                                                    |
+| :------------ | :-------------------------------------------------------------------------------------------------------------------------------------- |
+| `playwright`  | `npx -y @playwright/mcp@<version> install-browser chromium`, with the version pinned in `.mcp.json`, and again whenever the pin changes |
+| `context7`    | Optional: `export CONTEXT7_API_KEY="<key>"` in the shell profile for the higher rate limit; the server runs without one                 |
+| `ux-patterns` | Nothing                                                                                                                                 |
+
+A server started before its variable was exported inherits an empty environment, so restart the shell after changing the profile.
+
 ## Reporting Bugs
 
 Open an issue on [GitHub Issues](https://github.com/Cynthion/aicon-studio/issues) with the Node version, the endpoint kind, a description of the expected and actual behaviour, and the smallest project folder that shows it.

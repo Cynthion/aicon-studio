@@ -30,12 +30,18 @@ For maintainers. Contains technical documentation of features, configurations, p
 
 For whoever works the repository. Contains technical documentation of the setup and conventions used in the repository, and the repository's own work items.
 
-| File                                                       | Purpose                                            |
-| :--------------------------------------------------------- | :------------------------------------------------- |
-| [`impl/ai-harness.md`](impl/ai-harness.md)                 | AI setup of this repository                        |
-| [`impl/definition-of-done.md`](impl/definition-of-done.md) | Definition of Done                                 |
-| [`impl/documentation.md`](impl/documentation.md)           | Documentation style and authoring guide            |
-| [`impl/testing.md`](impl/testing.md)                       | Test first, the stub endpoint, the golden fixtures |
+| File                                                         | Purpose                                            |
+| :----------------------------------------------------------- | :------------------------------------------------- |
+| [`impl/a11y.md`](impl/a11y.md)                               | Accessible names, nesting, dialogs, target size    |
+| [`impl/ai-harness.md`](impl/ai-harness.md)                   | AI setup of this repository                        |
+| [`impl/angular.md`](impl/angular.md)                         | Conventions of the Angular studio page             |
+| [`impl/definition-of-done.md`](impl/definition-of-done.md)   | Definition of Done                                 |
+| [`impl/documentation.md`](impl/documentation.md)             | Documentation style and authoring guide            |
+| [`impl/renovate.md`](impl/renovate.md)                       | Dependency updates, groups, the ceiling            |
+| [`impl/security-review.md`](impl/security-review.md)         | How a vulnerability is recorded and kept current   |
+| [`impl/testing.md`](impl/testing.md)                         | Test first, the stub endpoint, the golden fixtures |
+| [`impl/ubiquitous-language.md`](impl/ubiquitous-language.md) | One name per concept                               |
+| [`impl/worktrees.md`](impl/worktrees.md)                     | Parallel work on several branches                  |
 
 Work items:
 

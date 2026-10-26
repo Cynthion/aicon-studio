@@ -20,3 +20,7 @@ None.
 - **First Release**:
   - **Context**: the package is `"private": true` and runs from a clone, linked by a `file:` dev dependency where another repository uses it.
   - **Proposal**: drop `"private"`, add `impl/releasing.md` with the publishing steps, publish `@cynthion/aicon-studio`, and document `npx`, the dev dependency by version and the global install in [`user/getting-started.md`](../user/getting-started.md). Then switch the consumers from `file:` to the version.
+
+## Security Findings
+
+None, kept per [`impl/security-review.md`](security-review.md).

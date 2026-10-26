@@ -7,6 +7,7 @@ Always in effect. Area conventions load automatically for the files they apply t
 - Never commit an API key or any other credential. The user settings file lives outside the repository, see [`user/getting-started.md`](../../.documentation/user/getting-started.md).
 - Never hand-edit build output under `dist/`, or a set under `example/runs/`.
 - Never change a file under `test/fixtures/` by hand. A fixture is what the pipeline wrote, byte for byte, see [`impl/testing.md`](../../.documentation/impl/testing.md).
+- When you find a vulnerability or touch a known one, follow [`impl/security-review.md`](../../.documentation/impl/security-review.md).
 
 ## Running Servers
 
@@ -19,6 +20,7 @@ Always in effect. Area conventions load automatically for the files they apply t
 - Prefer the smallest change that matches nearby code.
 - Prefer extending an existing helper over adding a new one.
 - Do not reformat files unrelated to the task.
+- One name per concept, from [`impl/ubiquitous-language.md`](../../.documentation/impl/ubiquitous-language.md). A synonym is a defect.
 
 ## Where Things Live
 

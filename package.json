@@ -26,7 +26,8 @@
     "lint": "eslint .",
     "prettier:check": "prettier --check .",
     "prettier:write": "prettier --write .",
-    "docs:lint": "markdownlint-cli2"
+    "docs:lint": "markdownlint-cli2",
+    "worktree:add": "bash scripts/worktree-add.sh"
   },
   "dependencies": {
     "playwright": "1.63.0",

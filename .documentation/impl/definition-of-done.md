@@ -4,6 +4,7 @@ A change is done when every applicable item below holds. Stating that something 
 
 ## General
 
+- **Conventions**: The conventions of the touched area are followed: [`impl/ubiquitous-language.md`](ubiquitous-language.md) for every name, [`impl/a11y.md`](a11y.md) for every control, [`impl/angular.md`](angular.md) for the Angular page.
 - **Testing**: Test conventions from [`impl/testing.md`](testing.md) are followed. Changed behavior is tested first: its cases were approved and its specs failed before the code was written.
 - **Build Output**: `dist/` is never hand-edited; `npm run build` writes it.
 - **Fixtures**: a file under `test/fixtures/` is what the pipeline wrote, byte for byte, and is regenerated deliberately, never edited by hand.
@@ -37,7 +38,7 @@ Every command runs from the repository root.
 - **One Command**: `npm run docs:lint` runs `markdownlint-cli2` over the repository. It checks style, and through `markdownlint-rule-relative-links` it checks that every relative link and heading anchor resolves.
 - **Repository Wide**: Always the whole repository, because a link breaks when its target moves rather than when its source changes.
 - **Rules**: `.markdownlint.json` holds the rule configuration and is read by both the command and the editor extension.
-- **Exclusions**: `.markdownlint-cli2.jsonc` lists the paths that must not be linted: build output, drawn sets, and the untracked `.research/` and `.plan/` artifacts.
+- **Exclusions**: `.markdownlint-cli2.jsonc` lists the paths that must not be linted: build output, drawn sets, the untracked `.research/` and `.plan/` artifacts, and Claude Code's own worktrees under `.claude/worktrees/`.
 - **Link Notation**: Autolinks, `<https://example.com>`, fail the gate. Every link carries descriptive text, see [`impl/documentation.md`](documentation.md).
 - **Editor**: The `davidanson.vscode-markdownlint` extension reports violations while editing. A clean editor is the fastest way to arrive at a green gate.
 - **Indentation**: Markdown indentation uses spaces, with no line-length limit and trailing whitespace kept, set in `.editorconfig`. Tabs inside a fenced code block are left alone, because the block is verbatim content.
@@ -59,4 +60,4 @@ Every command runs from the repository root.
 
 - **Branches**: `main` is the release branch. `feature/*` holds work in progress; its pull request runs the same CI gates and publishes nothing.
 - **Package**: Not published yet, `"private": true`. The steps arrive with **First Release** in [`impl/backlog.md`](backlog.md).
-- **Dependencies**: Renovate proposes updates once a month, grouped in `renovate.json`. A Playwright bump can change the golden fixtures, see [`impl/testing.md`](testing.md).
+- **Dependencies**: Renovate proposes updates once a month, grouped in `renovate.json`, see [`impl/renovate.md`](renovate.md). A Playwright bump can change the golden fixtures, see [`impl/testing.md`](testing.md).

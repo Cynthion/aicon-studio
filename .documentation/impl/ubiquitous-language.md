@@ -5,6 +5,7 @@ One name per concept, in code, on the page and in the documentation. Check a new
 | Concept                                                                                    | Term                                | Never                                             |
 | :----------------------------------------------------------------------------------------- | :---------------------------------- | :------------------------------------------------ |
 | The folder the studio runs against: `aicon-studio.json`, `styles/`, `references/`, `runs/` | **project**                         | "workspace", "repository" for the folder          |
+| The dialog of the operating system that chooses a folder                                   | **folder picker**                   | "file dialog", "file chooser"                     |
 | `aicon-studio.json`, parsed                                                                | **config**                          | "settings", "manifest"                            |
 | The per-user file that holds the endpoint, outside any project                             | **settings**                        | "config", "preferences"                           |
 | The OpenAI-compatible API the studio draws through                                         | **endpoint**                        | "provider", "backend", "service"                  |

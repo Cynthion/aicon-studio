@@ -128,26 +128,29 @@ A redraw clears the flips of that icon, because they point at regions of the old
 
 The server listens on the loopback interface only. Every answer is JSON; a failed check answers `400` with `{ "error" }`, a busy server `409`, a refused request `403`.
 
-| Route                            | Does                                                                                                                       |
-| :------------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
-| `GET /`                          | The page                                                                                                                   |
-| `GET /files/icons/<f>`           | A file of the target; `/files/sets/<run>/<style>/<f>` and `/files/references/<f>` likewise                                 |
-| `GET /api/state`                 | The config, the target, the styles, the files of the target, the references and every set, the public settings and the job |
-| `PUT /api/settings`              | Stores the settings; an empty key keeps the stored one, absent prices clear them                                           |
-| `PUT /api/styles/<name>`         | Writes a style; the prompt needs `{subject}` and a `#` heading                                                             |
-| `DELETE /api/styles/<name>`      | Deletes a style                                                                                                            |
-| `PUT /api/subjects/<stem>`       | Writes a drawn icon's subject into `aicon-studio.json`                                                                     |
-| `PUT /api/references/<stem>`     | Copies the stem's outline of a column, `icons` or a set, as its reference                                                  |
-| `DELETE /api/references/<stem>`  | Removes the reference                                                                                                      |
-| `POST /api/runs`                 | Starts a run of known styles at a quality; needs complete settings                                                         |
-| `POST /api/redraw`               | Redraws stems of a set                                                                                                     |
-| `POST /api/describe`             | Writes a subject from a drawing with the describe model                                                                    |
-| `PUT /api/flips`                 | Stores the flips of a stem in a set and derives its fill                                                                   |
-| `DELETE /api/sets/<run>/<style>` | Deletes a set, and its run folder when empty                                                                               |
-| `POST /api/adopt`                | Copies every SVG file of a set into the target, creating it when missing                                                   |
+| Route                            | Does                                                                                                                                           |
+| :------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /`                          | The page                                                                                                                                       |
+| `GET /files/icons/<f>`           | A file of the target; `/files/sets/<run>/<style>/<f>` and `/files/references/<f>` likewise                                                     |
+| `GET /api/state`                 | The project folder, the config, the target, the styles, the files of the target, the references and every set, the public settings and the job |
+| `PUT /api/project`               | Switches every route to another project folder, given as an absolute path; refused while a job runs                                            |
+| `POST /api/pick-folder`          | Opens the folder picker of the operating system and answers the chosen folder, `null` when it is cancelled                                     |
+| `PUT /api/settings`              | Stores the settings; an empty key keeps the stored one, absent prices clear them                                                               |
+| `PUT /api/styles/<name>`         | Writes a style; the prompt needs `{subject}` and a `#` heading                                                                                 |
+| `DELETE /api/styles/<name>`      | Deletes a style                                                                                                                                |
+| `PUT /api/subjects/<stem>`       | Writes a drawn icon's subject into `aicon-studio.json`                                                                                         |
+| `PUT /api/references/<stem>`     | Copies the stem's outline of a column, `icons` or a set, as its reference                                                                      |
+| `DELETE /api/references/<stem>`  | Removes the reference                                                                                                                          |
+| `POST /api/runs`                 | Starts a run of known styles at a quality; needs complete settings                                                                             |
+| `POST /api/redraw`               | Redraws stems of a set                                                                                                                         |
+| `POST /api/describe`             | Writes a subject from a drawing with the describe model                                                                                        |
+| `PUT /api/flips`                 | Stores the flips of a stem in a set and derives its fill                                                                                       |
+| `DELETE /api/sets/<run>/<style>` | Deletes a set, and its run folder when empty                                                                                                   |
+| `POST /api/adopt`                | Copies every SVG file of a set into the target, creating it when missing                                                                       |
 
 - **Files**: an icon URL carries its file's modification time, so a changed file is a new URL and the files are served immutable.
 - **One Job**: a run or redraw runs in the background; a second one, a flip, a delete or an adopt while it runs answers `409`. The page polls the state every two seconds while a job runs.
+- **Project**: the server holds one project at a time; `PUT /api/project` replaces it and forgets the finished job. The page keeps the recently opened folders itself. The folder picker is `osascript` on macOS, hosted by Finder so that the dialog opens in front and the browser comes back afterwards, `zenity` on Linux and a PowerShell `FolderBrowserDialog` on Windows; a platform without one answers `400`, a picker that fails `500` with its message.
 
 ### Guard
 

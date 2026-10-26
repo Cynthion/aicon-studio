@@ -1,3 +1,4 @@
+import { execFile } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -16,7 +17,7 @@ import {
   startRun,
   updateSet
 } from './pipeline.ts';
-import { isDrawn, readConfig, updateConfig, type Project } from './project.ts';
+import { isDrawn, readConfig, resolveProject, updateConfig, type Project } from './project.ts';
 import { publicSettings, readSettings, type Settings, writeSettings } from './settings.ts';
 
 // The studio server: a local page to compare icon sets, choose references, flip fill regions, edit subjects and styles, and
@@ -43,6 +44,68 @@ const check = (ok: unknown, message: string, status = 400): void => {
 
 const read = (file: string): string => (fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '');
 
+/** A native folder picker: the command, its arguments, and the exit code of a cancelled dialog. */
+interface Picker {
+  command: string;
+  args: string[];
+  cancelled: number;
+}
+
+/** The folder picker of each platform, opened at `dir`. */
+const PICKERS: Partial<Record<string, (dir: string) => Picker>> = {
+  // Finder hosts the dialog so that it opens in front; the app that was in front, the browser, comes back afterwards
+  darwin: (dir) => ({
+    command: 'osascript',
+    args: [
+      'set previous to path to frontmost application as text',
+      'set chosen to missing value',
+      'tell application "Finder"',
+      'activate',
+      'try',
+      `set chosen to choose folder with prompt "Choose the project folder" default location POSIX file "${dir.replace(/[\\"]/g, '\\$&')}"`,
+      'end try',
+      'end tell',
+      'tell application previous to activate',
+      'if chosen is missing value then return ""',
+      'POSIX path of chosen'
+    ].flatMap((line) => ['-e', line]),
+    cancelled: 0
+  }),
+  linux: (dir) => ({
+    command: 'zenity',
+    args: ['--file-selection', '--directory', '--title', 'Choose the project folder', '--filename', `${dir}/`],
+    cancelled: 1
+  }),
+  win32: (dir) => ({
+    command: 'powershell',
+    args: [
+      '-NoProfile',
+      '-Command',
+      `Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.FolderBrowserDialog; $d.Description = 'Choose the project folder'; $d.SelectedPath = '${dir.replaceAll("'", "''")}'; if ($d.ShowDialog() -eq 'OK') { $d.SelectedPath }`
+    ],
+    cancelled: 0
+  })
+};
+
+/** Opens the folder picker at `dir` and answers the chosen folder, or undefined when the dialog is cancelled. */
+const pickFolder = (dir: string): Promise<string | undefined> => {
+  const picker = PICKERS[process.platform];
+  check(picker, `no folder picker on ${process.platform}, type the path`);
+  const { command, args, cancelled } = picker!(dir);
+  return new Promise((resolve, reject) => {
+    execFile(command, args, (error, stdout, stderr) => {
+      const code = error?.code;
+      if (code === 'ENOENT') {
+        return reject(new HttpError(400, `no folder picker: ${command} is not installed, type the path`));
+      }
+      if (error && code !== cancelled) {
+        return reject(new Error(`${command} failed: ${stderr.trim() || error.message}`));
+      }
+      resolve(stdout.trim() || undefined);
+    });
+  });
+};
+
 /** File name without `.svg` -> modification time, the cache key of each icon on the page. */
 const versions = (dir: string): Record<string, number> =>
   fs.existsSync(dir)
@@ -58,7 +121,8 @@ type Body = Record<string, unknown>;
 type Route = [string, RegExp, (match: string[], body: Body) => unknown];
 
 /** The studio server over a project: the page, its files and the JSON API. Not listening yet. */
-export const createServer = (project: Project, settingsFile: string): http.Server => {
+export const createServer = (initial: Project, settingsFile: string): http.Server => {
+  let project = initial;
   let job: (Job & { kind: string; running: boolean; error?: string }) | undefined;
 
   const knownSet = (set: unknown): string => {
@@ -99,6 +163,7 @@ export const createServer = (project: Project, settingsFile: string): http.Serve
     const config = readConfig(project);
     const references = versions(project.references);
     return {
+      project: project.dir,
       config,
       target: config.target,
       styles: readStyles(project),
@@ -124,6 +189,21 @@ export const createServer = (project: Project, settingsFile: string): http.Serve
 
   const routes: Route[] = [
     ['GET', /^\/api\/state$/, () => state()],
+    [
+      'PUT',
+      /^\/api\/project$/,
+      (_, { dir }) => {
+        busy();
+        check(typeof dir === 'string' && path.isAbsolute(dir), 'a project folder is an absolute path');
+        try {
+          project = resolveProject(dir as string);
+        } catch (e) {
+          throw new HttpError(400, (e as Error).message);
+        }
+        job = undefined;
+      }
+    ],
+    ['POST', /^\/api\/pick-folder$/, async () => ({ dir: (await pickFolder(project.dir)) ?? null })],
     [
       'PUT',
       /^\/api\/styles\/([\w-]+)$/,

@@ -507,6 +507,17 @@
         gap: 8px;
         padding: 0;
       }
+      #project-dialog [data-dir] {
+        text-align: left;
+      }
+      #project-dialog .folder {
+        display: flex;
+        gap: 6px;
+        align-items: end;
+      }
+      #project-dialog .folder label {
+        flex: 1;
+      }
       #toast {
         position: fixed;
         bottom: 16px;
@@ -542,6 +553,7 @@
     <main id="main"></main>
     <dialog id="run-dialog"></dialog>
     <dialog id="settings-dialog"></dialog>
+    <dialog id="project-dialog"></dialog>
     <div
       role="status"
       hidden
@@ -561,7 +573,8 @@
           theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
           pair: 'side',
           hidden: [],
-          search: ''
+          search: '',
+          projects: []
         };
         try {
           return { ...base, ...JSON.parse(localStorage.getItem('aicon-studio') || '{}'), selected: null, draft: null };
@@ -571,12 +584,25 @@
       })();
       const save = () => {
         try {
-          const { view, size, theme, pair, hidden } = ui;
-          localStorage.setItem('aicon-studio', JSON.stringify({ view, size, theme, pair, hidden }));
+          const { view, size, theme, pair, hidden, projects } = ui;
+          localStorage.setItem('aicon-studio', JSON.stringify({ view, size, theme, pair, hidden, projects }));
         } catch {}
       };
       const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
       const money = (n) => `≈ $${n.toFixed(n < 0.1 ? 3 : 2)}`;
+      /** The last segment of a folder path, the name the page shows for a project. */
+      const folderName = (dir) => dir.split(/[\\/]/).filter(Boolean).pop() ?? dir;
+      /** Puts the project first among the recent projects, kept with the other preferences of the page. */
+      const remember = (dir) => {
+        if (ui.projects[0] !== dir) {
+          ui.projects = [dir, ...ui.projects.filter((d) => d !== dir)].slice(0, 8);
+          save();
+        }
+      };
+      const forget = (dir) => {
+        ui.projects = ui.projects.filter((d) => d !== dir);
+        save();
+      };
 
       let toastTimer;
       const toast = (text, error = false) => {
@@ -597,7 +623,7 @@
         const json = await res.json().catch(() => ({}));
         if (!res.ok) {
           toast(json.error || res.statusText, true);
-          throw new Error(json.error);
+          throw Object.assign(new Error(json.error), { status: res.status });
         }
         return json;
       };
@@ -605,6 +631,8 @@
       let timer;
       const refresh = async () => {
         S = await api('GET', '/api/state');
+        remember(S.project);
+        document.title = `${folderName(S.project)} · Aicon Studio`;
         render();
         clearTimeout(timer);
         if (S.job?.running) {
@@ -686,6 +714,7 @@
           .join('');
         document.getElementById('top').innerHTML = `
           <h1>Aicon Studio</h1>
+          <button type="button" data-act="project">Project: ${esc(S.project)}</button>
           <span class="group">${toggle('view', 'sets', ui.view, 'Sets')}${toggle('view', 'icons', ui.view, 'Icons')}${toggle('view', 'styles', ui.view, 'Styles')}</span>
           ${
             ui.view === 'sets'
@@ -989,6 +1018,70 @@
         dialog.showModal();
       };
 
+      const openProjectDialog = () => {
+        const dialog = document.getElementById('project-dialog');
+        const recent = ui.projects.filter((d) => d !== S.project);
+        dialog.innerHTML = `<form method="dialog">
+          <h2 id="project-title" style="margin-top:0">Project</h2>
+          <p class="muted">The folder that holds aicon-studio.json. Opening another one switches every view to it; the settings stay.</p>
+          ${
+            recent.length
+              ? `<fieldset><legend>Recent</legend>${recent.map((d) => `<button type="button" data-dir="${esc(d)}">${esc(d)}</button>`).join('')}</fieldset>`
+              : ''
+          }
+          <div class="folder">
+            <label>Folder<input name="dir" value="${esc(S.project)}" spellcheck="false" required></label>
+            <button type="button" data-browse>Browse…</button>
+          </div>
+          <menu><button value="cancel" formnovalidate>Cancel</button><button value="open" class="primary">Open</button></menu>
+        </form>`;
+        dialog.setAttribute('aria-labelledby', 'project-title');
+        const input = dialog.querySelector('[name=dir]');
+        dialog.querySelectorAll('[data-dir]').forEach((b) =>
+          b.addEventListener('click', () => {
+            input.value = b.dataset.dir;
+            dialog.close('open');
+          })
+        );
+        const browse = dialog.querySelector('[data-browse]');
+        browse.addEventListener('click', async () => {
+          browse.disabled = true;
+          try {
+            const { dir } = await api('POST', '/api/pick-folder');
+            if (dir) {
+              input.value = dir;
+            }
+          } catch {
+            // shown by api()
+          } finally {
+            browse.disabled = false;
+          }
+        });
+        dialog.onclose = async () => {
+          if (dialog.returnValue !== 'open') {
+            return;
+          }
+          const dir = input.value.trim();
+          try {
+            await api('PUT', '/api/project', { dir });
+          } catch (e) {
+            if (e.status === 400) {
+              forget(dir);
+            }
+            return;
+          }
+          ui.selected = null;
+          ui.draft = null;
+          ui.hidden = [];
+          ui.search = '';
+          save();
+          await refresh();
+          toast(`Opened ${S.project}`);
+        };
+        dialog.returnValue = '';
+        dialog.showModal();
+      };
+
       const flipsOf = (col, stem) => S.sets.find((s) => s.set === col)?.info.flips?.[stem] ?? [];
       let deriving = false;
       /** Stores the flips of an icon and derives its fill. Input during a derivation is ignored: it would build on a stale list. */
@@ -1118,6 +1211,8 @@
             return undoFlip(col, stem);
           case 'reset-flips':
             return setFlips(col, stem, []);
+          case 'project':
+            return openProjectDialog();
           case 'settings':
             return openSettingsDialog();
           case 'adopt':

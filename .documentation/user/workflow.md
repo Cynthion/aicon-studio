@@ -6,6 +6,12 @@ From the first run to an adopted set. The studio has three views, switched in th
 - **Icons**: every icon with its current file, name, subject and reference. The subject is edited here, because it applies to the icon in every style. The name is the file stem and is not edited in the studio.
 - **Styles**: the drawing prompts.
 
+## Project
+
+**Project** in the top bar shows the folder the studio runs against and opens another one. The dialog lists the folders opened before in this browser, takes a path, and **Browse…** opens the folder picker of the operating system. Opening a folder switches every view to its icons, styles, references and sets; the settings stay, because they are yours and not the project's. A folder without `aicon-studio.json` is refused, and nothing switches while a drawing job runs.
+
+---
+
 ## Runs And Sets
 
 **New run** draws every icon once per chosen style, after showing the image count and, with prices entered under **Settings**, the cost. Each style gets its own set, a column headed by the style and the run. One drawing job runs at a time; the page follows its progress and shows each icon as soon as it is drawn. A cell whose icon is not drawn yet shows **pending**, a failed one **failed**.
@@ -60,23 +66,24 @@ An outline whose contour is open fills only partly and needs a redraw rather tha
 
 ## Actions
 
-| Action                          | Where                         | Effect                                                                                      |
-| :------------------------------ | :---------------------------- | :------------------------------------------------------------------------------------------ |
-| New run                         | Top bar                       | Draws every icon in each chosen style, after showing the image count and the cost           |
-| Settings                        | Top bar                       | The endpoint, key, models and prices                                                        |
-| Use as reference                | Icon panel                    | Keeps this drawing as the reference, so later drawings keep its composition                 |
-| Remove reference                | Icon panel, or Icons view     | Drops the reference                                                                         |
-| Write subject from this drawing | Icon panel                    | The describe model writes a subject; the Icons view shows it unsaved, beside the saved one  |
-| Save subject                    | Icons view, or `⌘Enter`       | Writes the subject to `aicon-studio.json`; the next run or redraw of the icon draws from it |
-| Flip                            | Icon panel, filled view       | A click switches the region under it between filled and white, and derives the fill         |
-| Undo last flip                  | Icon panel, or `⌘Z`, `Ctrl+Z` | Drops the newest flip of the icon and derives the fill                                      |
-| Reset flips                     | Icon panel                    | Clears the flips of the icon and derives the fill                                           |
-| Redraw                          | Icon panel                    | Draws the icon again into the set, with the set's prompt and the current reference          |
-| Redraw N failed                 | Column menu                   | Draws every failed icon of the set again                                                    |
-| Adopt                           | Column menu                   | Copies the SVG files of the set into the target                                             |
-| New style from this prompt      | Column menu                   | Opens a new style with the prompt of the set                                                |
-| Delete set                      | Column menu                   | Deletes the set folder                                                                      |
-| Save, Duplicate, Delete         | Styles view                   | Edits the files in `styles/`, with a preview of the prompt for one icon                     |
+| Action                          | Where                         | Effect                                                                                        |
+| :------------------------------ | :---------------------------- | :-------------------------------------------------------------------------------------------- |
+| New run                         | Top bar                       | Draws every icon in each chosen style, after showing the image count and the cost             |
+| Settings                        | Top bar                       | The endpoint, key, models and prices                                                          |
+| Project                         | Top bar                       | Opens another project folder: one opened before, a typed path, or one chosen with **Browse…** |
+| Use as reference                | Icon panel                    | Keeps this drawing as the reference, so later drawings keep its composition                   |
+| Remove reference                | Icon panel, or Icons view     | Drops the reference                                                                           |
+| Write subject from this drawing | Icon panel                    | The describe model writes a subject; the Icons view shows it unsaved, beside the saved one    |
+| Save subject                    | Icons view, or `⌘Enter`       | Writes the subject to `aicon-studio.json`; the next run or redraw of the icon draws from it   |
+| Flip                            | Icon panel, filled view       | A click switches the region under it between filled and white, and derives the fill           |
+| Undo last flip                  | Icon panel, or `⌘Z`, `Ctrl+Z` | Drops the newest flip of the icon and derives the fill                                        |
+| Reset flips                     | Icon panel                    | Clears the flips of the icon and derives the fill                                             |
+| Redraw                          | Icon panel                    | Draws the icon again into the set, with the set's prompt and the current reference            |
+| Redraw N failed                 | Column menu                   | Draws every failed icon of the set again                                                      |
+| Adopt                           | Column menu                   | Copies the SVG files of the set into the target                                               |
+| New style from this prompt      | Column menu                   | Opens a new style with the prompt of the set                                                  |
+| Delete set                      | Column menu                   | Deletes the set folder                                                                        |
+| Save, Duplicate, Delete         | Styles view                   | Edits the files in `styles/`, with a preview of the prompt for one icon                       |
 
 ---
 

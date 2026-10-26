@@ -45,6 +45,12 @@ const run = async (styles = ['soft'], icons: (Drawn | Rotated)[] = HOME_ONLY): P
 const setPath = (set: string, file: string): string => path.join(project.runs, ...set.split('/'), file);
 const generations = (): number => stub.requests.filter((r) => r.endpoint === 'generations').length;
 const viewBox = (markup: string): string => /viewBox="([^"]+)"/.exec(markup)?.[1] ?? '';
+/** Polls the state until the job is over, so its browser closes before the server does. */
+const settled = async (port: number): Promise<void> => {
+  while (((await request(port, 'GET', '/api/state')).json['job'] as { running: boolean }).running) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+};
 
 beforeEach(async () => {
   stub = await startStub();
@@ -237,10 +243,7 @@ describe('redraw', () => {
     const set = ((await request(port, 'GET', '/api/state')).json['sets'] as { set: string }[])[0].set;
     const again = await request(port, 'POST', '/api/runs', { body: { styles: ['soft'], quality: 'medium' } });
     const redrawn = await request(port, 'POST', '/api/redraw', { body: { set, stems: ['home'] } });
-    // let the job finish, so its browser closes before the server does
-    while (((await request(port, 'GET', '/api/state')).json['job'] as { running: boolean }).running) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-    }
+    await settled(port);
     await close(server);
 
     expect([started.status, again.status, redrawn.status]).toEqual([200, 409, 409]);
@@ -262,5 +265,35 @@ describe('describe', () => {
       content[1].image_url?.url.startsWith('data:image/png;base64,'),
       subject
     ]).toEqual(['chat', 'chat-model', true, true, 'a house with a door']);
+  });
+});
+
+describe('project', () => {
+  const RUN = { styles: ['soft'], quality: 'medium' };
+
+  it('refuses a switch while a job runs', async () => {
+    stub.delayMs = 1500;
+    ({ project } = makeProject({ icons: HOME_ONLY, targetFiles: [] }));
+    const server = createServer(project, makeSettingsFile(settings));
+    const port = await listen(server);
+    await request(port, 'POST', '/api/runs', { body: RUN });
+    const switched = await request(port, 'PUT', '/api/project', { body: { dir: makeProject().dir } });
+    await settled(port);
+    await close(server);
+
+    expect(switched.status).toBe(409);
+  });
+
+  it('forgets the job of the previous project', async () => {
+    ({ project } = makeProject({ icons: HOME_ONLY, targetFiles: [] }));
+    const server = createServer(project, makeSettingsFile(settings));
+    const port = await listen(server);
+    await request(port, 'POST', '/api/runs', { body: RUN });
+    await settled(port);
+    await request(port, 'PUT', '/api/project', { body: { dir: makeProject().dir } });
+    const job = (await request(port, 'GET', '/api/state')).json['job'];
+    await close(server);
+
+    expect(job).toBeUndefined();
   });
 });

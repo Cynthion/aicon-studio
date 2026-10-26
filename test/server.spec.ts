@@ -17,6 +17,8 @@ import {
   readJson,
   request,
   SET_FILES,
+  SHARP_PROMPT,
+  tmpDir,
   type Reply
 } from './helpers.ts';
 
@@ -424,5 +426,50 @@ describe('settings', () => {
     const reply = await api('PUT', '/api/settings', rest);
 
     expect(reply.status).toBe(400);
+  });
+});
+
+describe('project', () => {
+  beforeEach(() => start());
+
+  it('shows the project folder', async () => {
+    expect((await state())['project']).toBe(dir);
+  });
+
+  it('switches to another project', async () => {
+    const other = makeProject({ target: './other-icons', sets: ['2026-02-02-0000/soft'] });
+    await api('PUT', '/api/project', { dir: other.dir });
+    const switched = await state();
+
+    expect([
+      switched['project'],
+      switched['target'],
+      (switched['sets'] as { set: string }[]).map((s) => s.set)
+    ]).toEqual([other.dir, './other-icons', ['2026-02-02-0000/soft']]);
+  });
+
+  it('writes into the new project', async () => {
+    const other = makeProject();
+    await api('PUT', '/api/project', { dir: other.dir });
+    await api('PUT', '/api/styles/bold', { prompt: SHARP_PROMPT });
+
+    expect([other.dir, dir].map((d) => fs.existsSync(path.join(d, 'styles', 'bold.md')))).toEqual([true, false]);
+  });
+
+  it('refuses a folder without aicon-studio.json', async () => {
+    const empty = tmpDir();
+    const reply = await api('PUT', '/api/project', { dir: empty });
+
+    expect([reply.status, reply.json['error'], (await state())['project']]).toEqual([
+      400,
+      `no aicon-studio.json in ${empty}`,
+      dir
+    ]);
+  });
+
+  it('refuses a relative folder', async () => {
+    const reply = await api('PUT', '/api/project', { dir: 'example' });
+
+    expect([reply.status, (await state())['project']]).toEqual([400, dir]);
   });
 });

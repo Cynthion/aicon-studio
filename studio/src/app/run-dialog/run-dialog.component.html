@@ -1,6 +1,6 @@
 <studio-ui-dialog
   #dialog
-  headline="New run"
+  [headline]="testRun() ? 'New test run' : 'New run'"
   (closed)="studio.dialog.set(undefined)">
   @if (settingsDone()) {
     <p class="hint">Every chosen icon is drawn once per chosen style, each style into its own set. Referenced icons keep the composition of their reference.</p>

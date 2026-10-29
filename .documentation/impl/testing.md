@@ -89,8 +89,8 @@ When each run is a gate is in [`impl/definition-of-done.md`](definition-of-done.
 
 ## Visual Testing
 
-The page's specs cover its rules, not its rendering. A change to the page is proven on the served studio, built first with `npm run build` or `npm run watch`, by hand or through the `playwright` MCP server described in [`impl/ai-harness.md`](ai-harness.md), against the stub endpoint or a real one.
+The page's specs cover its rules, not its rendering. A change to the page is proven on the served studio, or on the page `npm start` serves with hot reload, by hand or through the `playwright` MCP server described in [`impl/ai-harness.md`](ai-harness.md), against the stub endpoint or a real one.
 
-- **Own Studio**: a second studio, `node src/cli.ts <copy of example> --port 54401`, over a copy of `example/` in a temporary folder, so `example/aicon-studio.json` stays as it is.
+- **Own Studio**: a second studio, `node src/cli.ts <copy of example> --port 54401`, over a copy of `example/` in a temporary folder, so `example/aicon-studio.json` stays as it is. `npx ng serve --port 54411 --proxy-config <copy of studio/proxy.conf.json naming 54401>` serves the page over it with hot reload.
 - **Own Settings**: `XDG_CONFIG_HOME` set to a temporary folder, so the proof writes no settings file of yours.
 - **Stub**: `startStub` of `test/stub.ts` listens on a free port; its URL is the base URL entered under **Settings**.

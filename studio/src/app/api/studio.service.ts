@@ -20,7 +20,8 @@ export interface Prefs {
   projects: string[];
 }
 
-export type DialogName = 'settings' | 'project' | 'run' | 'add-icon';
+/** `run` and `test-run` open the same dialog, preset to every icon or to chosen icons. */
+export type DialogName = 'settings' | 'project' | 'run' | 'test-run' | 'add-icon';
 
 /** The cell open in the icon panel. */
 export interface Selection {

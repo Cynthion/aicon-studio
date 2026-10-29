@@ -19,7 +19,16 @@ import {
   updateSet,
   writeRotation
 } from './pipeline.ts';
-import { isDrawn, readConfig, resolveProject, updateConfig, type Project, type Rotated } from './project.ts';
+import {
+  CONFIG_FILE,
+  createProject,
+  isDrawn,
+  readConfig,
+  resolveProject,
+  updateConfig,
+  type Project,
+  type Rotated
+} from './project.ts';
 import { publicSettings, readSettings, type Settings, writeSettings } from './settings.ts';
 
 // The studio server: a local page to compare icon sets, choose references, flip fill regions, edit subjects and styles, and
@@ -211,6 +220,17 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
         } catch (e) {
           throw new HttpError(400, (e as Error).message);
         }
+        job = undefined;
+      }
+    ],
+    [
+      'POST',
+      /^\/api\/project$/,
+      (_, { dir }) => {
+        busy();
+        check(typeof dir === 'string' && path.isAbsolute(dir), 'a project folder is an absolute path');
+        check(!fs.existsSync(path.join(dir as string, CONFIG_FILE)), `already a project: ${dir as string}`);
+        project = createProject(dir as string);
         job = undefined;
       }
     ],

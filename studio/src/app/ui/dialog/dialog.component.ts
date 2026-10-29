@@ -2,7 +2,7 @@ import { afterNextRender, Component, type ElementRef, input, output, viewChild }
 
 let next = 0;
 
-/** A modal `<dialog>`, named by its headline, open while it exists. `closed` answers the value it was closed with. */
+/** A modal `<dialog>`, named by its headline, open while it exists; Escape, ✕ and a click on the backdrop close it. `closed` answers the value it was closed with. */
 @Component({
   selector: 'studio-ui-dialog',
   templateUrl: './dialog.component.html',

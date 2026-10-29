@@ -40,7 +40,7 @@ A repository keeps `aicon-studio.json`, `styles/` and `references/` under versio
 - **Stem**: the file name without `.svg`, in kebab case: letters, digits, dashes and underscores.
 - **Subject**: describes the symbol to draw, such as `a gear`, not the concept it stands for, so every style draws the same symbol. The studio edits subjects under **Icons**; **Write subject from this drawing** writes one that also describes the composition, see [Workflow](workflow.md).
 - **Rotation**: the four chevrons are one drawing, so they match. A rotation is referenced, flipped and redrawn through its `from` icon.
-- **In The Studio**: **Icons** adds, orders and removes entries and edits subjects, see [Workflow](workflow.md). A stem is renamed by hand in this file.
+- **In The Studio**: **Project** → **Create** writes this file with no icons and `./icons` as target. **Icons** adds, orders and removes entries and edits subjects, see [Workflow](workflow.md). A stem and the target are edited by hand in this file.
 
 ---
 

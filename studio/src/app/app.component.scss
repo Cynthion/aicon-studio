@@ -1,12 +1,17 @@
+// the shell fills the viewport and never scrolls; a view scrolls its own table, so nothing chains to the page
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+// one row; the tabs stretch to its bottom edge, so the active one underlines on the border
 .top {
-  position: sticky;
-  top: 0;
-  z-index: 5;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
+  gap: 0 16px;
   align-items: center;
-  padding: 10px 16px;
+  min-height: 52px;
+  padding: 0 16px;
   background: var(--card);
   border-bottom: 1px solid var(--line);
 }
@@ -15,45 +20,77 @@ h1 {
   font-size: 1.05rem;
 }
 .project {
-  display: grid;
-  justify-items: start;
-  max-width: 240px;
-  text-align: left;
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  max-width: 260px;
+  border-color: transparent;
 }
-.path {
-  max-width: 100%;
+.project .muted {
+  font-size: 12px;
+}
+.folder {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--muted);
-  font-size: 11px;
+  font-weight: 600;
 }
 nav {
-  display: inline-flex;
-  gap: 4px;
+  display: flex;
+  align-self: stretch;
 }
 nav a {
-  padding: 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--fg);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: -1px;
+  padding: 0 12px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
   text-decoration: none;
 }
 nav a:hover {
-  border-color: var(--accent);
+  color: var(--fg);
+  border-bottom-color: var(--line);
 }
 nav a.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--card);
+  color: var(--fg);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
 }
 .count {
-  opacity: 0.7;
   font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+// the next setup step
+.dot {
+  display: inline-block;
+  vertical-align: middle;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 .spacer {
   flex: 1;
 }
+.split {
+  display: inline-flex;
+}
+.split > button:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.split > button:last-child {
+  margin-left: -1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
 main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   padding: 16px;
 }

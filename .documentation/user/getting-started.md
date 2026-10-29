@@ -20,10 +20,10 @@ npm run build
 node <clone>/dist/cli.js <project> [--port 54400]
 ```
 
-| Argument  | Meaning                                                                                                                            |
-| :-------- | :--------------------------------------------------------------------------------------------------------------------------------- |
-| `project` | The folder that holds `aicon-studio.json`; the working directory when left out. **Project** in the top bar opens another one later |
-| `--port`  | The loopback port the studio listens on, so a second project runs beside the first                                                 |
+| Argument  | Meaning                                                                                                                                       |
+| :-------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
+| `project` | The folder that holds `aicon-studio.json`; the working directory when left out. **Project** in the top bar opens or creates another one later |
+| `--port`  | The loopback port the studio listens on, so a second project runs beside the first                                                            |
 
 The command fails with `no aicon-studio.json in <folder>` when the folder is not a project, and with `port 54400 is in use, pass --port` when another studio holds the port.
 

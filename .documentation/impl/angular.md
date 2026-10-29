@@ -9,12 +9,12 @@ Conventions for the Angular studio page: where a component lives, what it is cal
 | `studio/src/app/api/`    | The HTTP API: its types, the service that calls it, the page's state and pure helpers |
 | `studio/src/app/ui/`     | Reusable components: dialog, confirm, toast, item menu, pair                          |
 | `studio/src/app/<view>/` | One folder per view, `icons`, `styles`, `sets`, with the components only it uses      |
-| `studio/src/app/<name>/` | The shell's own components and dialogs: flow, job status, settings, project, run      |
+| `studio/src/app/<name>/` | The shell's own components and dialogs: job status, settings, project, run            |
 
 - **Forms**: ngx-formidable fields on Signal Forms. A rule the server also checks lives in `studio.helpers.ts`, so the form and its spec share it.
 - **Menus**: `@angular/aria` Menu, through `studio-ui-item-menu`. Dialogs are the native `<dialog>`, through `studio-ui-dialog`.
 - **Routing**: hash routes, `#/icons`, `#/styles`, `#/sets`, so the server serves `/` alone.
-- **Development**: `npm run watch` rebuilds `dist/studio/browser` on every change; reload the served studio to see it.
+- **Development**: `npm start` serves the studio over `example` on `54400` and the page with hot reload on `http://localhost:54410`, which `studio/proxy.conf.json` forwards `/api` and `/files` to the studio. `Ctrl+C` stops both.
 
 ---
 

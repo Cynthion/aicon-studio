@@ -605,4 +605,35 @@ describe('project', () => {
 
     expect([reply.status, (await state())['project']]).toEqual([400, dir]);
   });
+
+  it('creates a project in a new folder and switches to it', async () => {
+    const created = path.join(tmpDir(), 'studio');
+    const reply = await api('POST', '/api/project', { dir: created });
+    const switched = await state();
+
+    expect([
+      reply.status,
+      readJson(path.join(created, CONFIG_FILE)),
+      switched['project'],
+      switched['styles'],
+      switched['sets']
+    ]).toEqual([200, { target: './icons', quality: 'medium', icons: [] }, created, [], []]);
+  });
+
+  it('refuses to create a project where one is', async () => {
+    const before = read(project.file);
+    const reply = await api('POST', '/api/project', { dir });
+
+    expect([reply.status, reply.json['error'], read(project.file)]).toEqual([400, `already a project: ${dir}`, before]);
+  });
+
+  it('refuses to create a project at a relative path', async () => {
+    const reply = await api('POST', '/api/project', { dir: 'relative' });
+
+    expect([reply.status, reply.json['error'], (await state())['project']]).toEqual([
+      400,
+      'a project folder is an absolute path',
+      dir
+    ]);
+  });
 });

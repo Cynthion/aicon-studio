@@ -11,7 +11,7 @@ interface ProjectModel {
   dir: string;
 }
 
-/** Opens another project folder: one opened before, a typed path, or one chosen in the folder picker. */
+/** Opens another project folder: one opened before, a typed path, or one chosen in the folder picker. Creates one there on request. */
 @Component({
   selector: 'studio-project-dialog',
   templateUrl: './project-dialog.component.html',
@@ -64,13 +64,29 @@ export class ProjectDialogComponent {
       this.error.set(messageOf(e));
       return;
     }
+    await this.switched(`Opened ${dir}`);
+  }
+
+  protected async create(dir: string): Promise<void> {
+    this.error.set(undefined);
+    try {
+      await this.api.send('POST', '/api/project', { dir });
+    } catch (e) {
+      this.error.set(messageOf(e));
+      return;
+    }
+    await this.switched(`Created ${dir}`);
+  }
+
+  /** The server holds the other project now: the page forgets what belonged to the old one and shows the new one. */
+  private async switched(done: string): Promise<void> {
     this.studio.selected.set(undefined);
     this.studio.drafts.set({});
     this.studio.styleDraft.set(undefined);
     this.studio.search.set('');
     this.studio.updatePrefs({ hidden: [], order: [] });
     await this.studio.reload();
-    this.toasts.info(`Opened ${dir}`);
+    this.toasts.info(done);
     this.dialog().close('opened');
   }
 }

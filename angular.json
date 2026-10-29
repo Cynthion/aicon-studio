@@ -55,6 +55,22 @@
           },
           "defaultConfiguration": "production"
         },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "port": 54410,
+            "proxyConfig": "studio/proxy.conf.json"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "studio:build:production"
+            },
+            "development": {
+              "buildTarget": "studio:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {

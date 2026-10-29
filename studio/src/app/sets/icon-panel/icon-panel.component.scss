@@ -1,9 +1,11 @@
+// the aside is the flex item of the Sets layout itself, so it shrinks to the room left and scrolls inside
+:host {
+  display: contents;
+}
 aside {
-  position: sticky;
-  top: 72px;
   width: 560px;
   max-width: 45vw;
-  max-height: calc(100vh - 150px);
+  max-height: 100%;
   overflow: auto;
   padding: 16px;
 }
@@ -81,7 +83,6 @@ figcaption {
 }
 @media (max-width: 900px) {
   aside {
-    position: static;
     width: 100%;
     max-width: none;
   }

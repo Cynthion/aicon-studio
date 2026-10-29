@@ -57,7 +57,7 @@ export class RunDialogComponent {
   protected readonly model = signal<RunModel>({
     styles: [],
     quality: this.state().config.quality,
-    icons: 'all',
+    icons: this.studio.dialog() === 'test-run' ? 'chosen' : 'all',
     stems: chosenStems(this.state(), this.studio.prefs().runStems)
   });
   protected readonly testRun = computed(() => this.model().icons === 'chosen');

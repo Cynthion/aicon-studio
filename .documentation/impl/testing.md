@@ -38,6 +38,7 @@ Expected values come from the requirement, not from the code. A spec written aft
 | Tool          | Role                                                                       |
 | :------------ | :------------------------------------------------------------------------- |
 | Vitest        | Runner and assertions, in Node, with its globals on                        |
+| `ng test`     | The page's specs, Vitest through the Angular CLI, in jsdom                 |
 | Playwright    | The Chromium the pipeline rasterizes with; the specs launch the real thing |
 | Stub endpoint | `test/stub.ts`, a fake OpenAI-compatible API, see below                    |
 
@@ -47,7 +48,7 @@ Expected values come from the requirement, not from the code. A spec written aft
 
 ## Writing A Spec
 
-- **Location**: `test/<module>.spec.ts` for `src/<module>.ts`, and `test/fill.spec.ts` for the raster fill, with one `describe` per exported function or route group.
+- **Location**: `test/<module>.spec.ts` for `src/<module>.ts`, and `test/fill.spec.ts` for the raster fill, with one `describe` per exported function or route group. A spec of the page sits beside its file, `studio/src/app/**/<name>.spec.ts`.
 - **Behavior, Not Mechanism**: an `it` names the rule it proves, such as `'keeps the stored key when none is sent'`, and asserts on the answer, the file or the request. It is not named after the bug that prompted it.
 - **One Rule Per Test**: an `it` proves one rule, with one `expect` where practical; several values go into one array.
 - **Own Project**: a spec builds its project in a temporary folder with `makeProject` of `test/helpers.ts`, from the fixture files, and never runs against `example/`.
@@ -76,7 +77,8 @@ Expected values come from the requirement, not from the code. A spec written aft
 
 ## Running Tests
 
-- **All Specs**: `npm test`, which runs every file once.
+- **All Specs**: `npm test`, which runs every file once: the server's, then the page's.
+- **The Page's Specs**: `npx ng test --no-watch`.
 - **One File**: `npx vitest run test/settings.spec.ts`.
 - **By Name**: `npx vitest run -t 'keeps the stored key'`.
 - **Watch Mode**: `npx vitest` in a terminal.
@@ -87,4 +89,8 @@ When each run is a gate is in [`impl/definition-of-done.md`](definition-of-done.
 
 ## Visual Testing
 
-The page has no spec. A change to it is proven on the served studio, `node src/cli.ts example`, by hand or through the `playwright` MCP server described in [`impl/ai-harness.md`](ai-harness.md), against the stub endpoint or a real one.
+The page's specs cover its rules, not its rendering. A change to the page is proven on the served studio, built first with `npm run build` or `npm run watch`, by hand or through the `playwright` MCP server described in [`impl/ai-harness.md`](ai-harness.md), against the stub endpoint or a real one.
+
+- **Own Studio**: a second studio, `node src/cli.ts <copy of example> --port 54401`, over a copy of `example/` in a temporary folder, so `example/aicon-studio.json` stays as it is.
+- **Own Settings**: `XDG_CONFIG_HOME` set to a temporary folder, so the proof writes no settings file of yours.
+- **Stub**: `startStub` of `test/stub.ts` listens on a free port; its URL is the base URL entered under **Settings**.

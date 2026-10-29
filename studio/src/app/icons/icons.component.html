@@ -1,0 +1,156 @@
+<div class="toolbar">
+  <input
+    type="search"
+    placeholder="Filter icons"
+    aria-label="Filter icons"
+    [value]="studio.search()"
+    (input)="studio.search.set($any($event.target).value)" />
+  <span class="hint">{{ rows().length }} of {{ icons().length }}</span>
+  <span class="spacer"></span>
+  <button
+    type="button"
+    class="primary"
+    [disabled]="studio.busy()"
+    [title]="studio.busy() ? 'Wait for the drawing job' : ''"
+    (click)="studio.dialog.set('add-icon')">
+    Add icon
+  </button>
+</div>
+<p
+  class="visually-hidden"
+  aria-live="polite">
+  {{ announcement() }}
+</p>
+<div class="card wrap">
+  @if (rows().length) {
+    <table aria-label="Icons">
+      <thead>
+        <tr>
+          <th scope="col"><span class="visually-hidden">Move</span></th>
+          <th scope="col">Current</th>
+          <th scope="col">Stem</th>
+          <th scope="col">
+            Subject
+            <small class="hint">replaces {{ '{subject}' }} in every style prompt of the next run or redraw · ⌘Enter saves</small>
+          </th>
+          <th scope="col">
+            Reference
+            <small class="hint">chosen in Sets</small>
+          </th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody
+        cdkDropList
+        (cdkDropListDropped)="drop($event)">
+        @for (icon of rows(); track icon.stem; let index = $index) {
+          <tr
+            cdkDrag
+            cdkDragPreviewContainer="parent"
+            [cdkDragDisabled]="!canMove()">
+            <td>
+              <span
+                class="drag-handle"
+                cdkDragHandle
+                aria-hidden="true"
+                [class.fixed]="!canMove()"
+                [title]="canMove() ? 'Drag to move' : 'Clear the filter to move icons'">
+                ⠿
+              </span>
+            </td>
+            <td>
+              <studio-ui-pair
+                [outline]="fileUrl(current(), icon.stem)"
+                [fill]="fileUrl(current(), icon.stem + '-filled')" />
+            </td>
+            <td>
+              <code>{{ icon.stem }}</code>
+            </td>
+            <td>
+              @if (isDrawn(icon)) {
+                @let draft = this.draft(icon);
+                <div class="subject">
+                  <textarea
+                    rows="2"
+                    spellcheck="false"
+                    [id]="'subject-' + icon.stem"
+                    [attr.aria-label]="'Subject of ' + icon.stem"
+                    [value]="draft ?? icon.subject"
+                    (input)="edit(icon, $any($event.target).value)"
+                    (keydown)="onKeydown($event, icon)"></textarea>
+                  @if (draft !== undefined) {
+                    <div class="edit">
+                      <button
+                        type="button"
+                        class="primary"
+                        [disabled]="!draft.trim()"
+                        (click)="save(icon)">
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        (click)="studio.setDraft(icon.stem, undefined)">
+                        Revert
+                      </button>
+                    </div>
+                  }
+                </div>
+                @if (draft !== undefined) {
+                  <small class="hint">Saved: {{ icon.subject }}</small>
+                }
+                @if (draft !== undefined && !draft.trim()) {
+                  <small class="error">A subject must not be empty.</small>
+                }
+              } @else {
+                <span class="muted">Rotation of {{ icon.from }} by {{ icon.rotate }}°</span>
+              }
+            </td>
+            <td>
+              @if (referenceUrl(icon.stem); as url) {
+                <div class="group">
+                  <i
+                    class="ic"
+                    [style.--src]="url"></i>
+                  <span>{{ holders(icon.stem) }}</span>
+                  <button
+                    type="button"
+                    (click)="removeReference(icon.stem)">
+                    Remove reference
+                  </button>
+                </div>
+              }
+            </td>
+            <td>
+              <studio-ui-item-menu
+                [ariaLabel]="'Actions for ' + icon.stem"
+                [entries]="entries(icon, index)"
+                (selected)="act(icon, index, $event)" />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (icons().length) {
+    <div class="empty">
+      <p>No icon matches '{{ studio.search() }}'.</p>
+      <button
+        type="button"
+        (click)="studio.search.set('')">
+        Clear filter
+      </button>
+    </div>
+  } @else {
+    <div class="empty">
+      <p>No icons yet. Add icon names the first one.</p>
+      <button
+        type="button"
+        class="primary"
+        (click)="studio.dialog.set('add-icon')">
+        Add icon
+      </button>
+    </div>
+  }
+</div>
+@if (studio.dialog() === 'add-icon') {
+  <studio-add-icon-dialog />
+}

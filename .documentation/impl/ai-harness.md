@@ -28,17 +28,15 @@ A skill's directory name and its frontmatter `name` are the same string. A skill
 
 Rules are pointers, not content. Each one names the document to read and nothing else, so a convention exists in exactly one place, and a rule pulls in only the document its own area needs.
 
-| File                                                                   | Applies To                                                      | Points At                                                                                                           |
-| :--------------------------------------------------------------------- | :-------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------ |
-| [`.claude/rules/angular.md`](../../.claude/rules/angular.md)           | `**/*.component.ts`, `**/*.component.html`, `**/*.directive.ts` | [`impl/angular.md`](angular.md), [`impl/a11y.md`](a11y.md), [`impl/ubiquitous-language.md`](ubiquitous-language.md) |
-| [`.claude/rules/dependencies.md`](../../.claude/rules/dependencies.md) | `package.json`, `.mcp.json`, `renovate.json`                    | [`impl/renovate.md`](renovate.md)                                                                                   |
-| [`.claude/rules/markdown.md`](../../.claude/rules/markdown.md)         | `**/*.md`                                                       | [`impl/documentation.md`](documentation.md)                                                                         |
-| [`.claude/rules/repository.md`](../../.claude/rules/repository.md)     | Everything                                                      | Invariants, stated inline                                                                                           |
-| [`.claude/rules/testing.md`](../../.claude/rules/testing.md)           | `**/*.spec.ts`                                                  | [`impl/testing.md`](testing.md)                                                                                     |
+| File                                                                   | Applies To                                   | Points At                                                                                                           |
+| :--------------------------------------------------------------------- | :------------------------------------------- | :------------------------------------------------------------------------------------------------------------------ |
+| [`.claude/rules/angular.md`](../../.claude/rules/angular.md)           | `studio/**/*.ts`, `studio/**/*.html`         | [`impl/angular.md`](angular.md), [`impl/a11y.md`](a11y.md), [`impl/ubiquitous-language.md`](ubiquitous-language.md) |
+| [`.claude/rules/dependencies.md`](../../.claude/rules/dependencies.md) | `package.json`, `.mcp.json`, `renovate.json` | [`impl/renovate.md`](renovate.md)                                                                                   |
+| [`.claude/rules/markdown.md`](../../.claude/rules/markdown.md)         | `**/*.md`                                    | [`impl/documentation.md`](documentation.md)                                                                         |
+| [`.claude/rules/repository.md`](../../.claude/rules/repository.md)     | Everything                                   | Invariants, stated inline                                                                                           |
+| [`.claude/rules/testing.md`](../../.claude/rules/testing.md)           | `**/*.spec.ts`                               | [`impl/testing.md`](testing.md)                                                                                     |
 
 Scoping uses `paths` frontmatter. A rule without `paths` loads in every session, so [`.claude/rules/repository.md`](../../.claude/rules/repository.md) stays short.
-
-[`.claude/rules/angular.md`](../../.claude/rules/angular.md) matches by file suffix rather than by directory, because the Angular workspace does not exist yet, see **Angular UI** in [`impl/backlog.md`](backlog.md). Its globs narrow to the workspace once it does.
 
 ---
 

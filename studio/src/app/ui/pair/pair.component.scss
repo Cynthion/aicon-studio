@@ -1,0 +1,34 @@
+:host {
+  display: inline-flex;
+  gap: 6px;
+}
+.ic {
+  display: inline-block;
+  flex: none;
+  width: var(--size);
+  height: var(--size);
+  background: currentColor;
+  mask: var(--src) center / contain no-repeat;
+}
+.ic.none {
+  position: relative;
+  background: none;
+  mask: none;
+}
+.ic.none::after {
+  content: '–';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+:host(.hover) .filled,
+:host(.hover:hover) .outline,
+:host-context(.cell:hover):host(.hover) .outline {
+  display: none;
+}
+:host(.hover:hover) .filled,
+:host-context(.cell:hover):host(.hover) .filled {
+  display: inline-block;
+}

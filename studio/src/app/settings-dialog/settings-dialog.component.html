@@ -1,0 +1,73 @@
+<studio-ui-dialog
+  #dialog
+  headline="Settings"
+  (closed)="studio.dialog.set(undefined)">
+  <p class="hint">Stored for you alone, outside the project folder. The key is never shown again.</p>
+  <form
+    class="fields"
+    [formRoot]="form">
+    <formidable-field-decorator>
+      <formidable-input-field
+        placeholder="https://…/v1"
+        [formField]="form.baseUrl" />
+      <div formidableFieldLabel>Base URL of an OpenAI-compatible API</div>
+    </formidable-field-decorator>
+    <formidable-field-decorator>
+      <studio-password-field
+        [formField]="form.apiKey"
+        [revealed]="revealed()" />
+      <div formidableFieldLabel>API key</div>
+      <button
+        type="button"
+        formidableFieldSuffix
+        class="icon reveal"
+        [attr.aria-pressed]="revealed()"
+        (click)="revealed.set(!revealed())">
+        {{ revealed() ? 'Hide' : 'Show' }}
+      </button>
+      <div formidableFieldHint>
+        {{ hasKey ? 'A key is stored. Leave this empty to keep it.' : 'Your key for the endpoint.' }}
+      </div>
+    </formidable-field-decorator>
+    <formidable-field-decorator>
+      <formidable-input-field [formField]="form.imageModel" />
+      <div formidableFieldLabel>Image model</div>
+    </formidable-field-decorator>
+    <formidable-field-decorator>
+      <formidable-input-field [formField]="form.describeModel" />
+      <div formidableFieldLabel>Describe model</div>
+      <div formidableFieldHint>A chat model with image input; it writes subjects from drawings.</div>
+    </formidable-field-decorator>
+    <div class="prices">
+      <formidable-field-decorator>
+        <formidable-input-field [formField]="form.pricePlain" />
+        <div formidableFieldLabel>Price per plain image, in $</div>
+      </formidable-field-decorator>
+      <formidable-field-decorator>
+        <formidable-input-field [formField]="form.priceReferenced" />
+        <div formidableFieldLabel>Price per referenced image, in $</div>
+      </formidable-field-decorator>
+    </div>
+    <p class="hint">The prices only drive the cost estimates; leave both empty to hide them.</p>
+    @if (error(); as error) {
+      <p
+        class="error"
+        role="alert">
+        {{ error }}
+      </p>
+    }
+    <div class="buttons">
+      <button
+        type="button"
+        (click)="dialog.close()">
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="primary"
+        [disabled]="form().submitting()">
+        Save
+      </button>
+    </div>
+  </form>
+</studio-ui-dialog>

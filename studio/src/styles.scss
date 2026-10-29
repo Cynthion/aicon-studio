@@ -1,0 +1,222 @@
+// The studio's theme and the controls every view shares. A component styles only what is its own.
+@use '@cynthion/ngx-formidable/styles/ngx-formidable';
+
+:root {
+  --bg: #f4f7f6;
+  --card: #ffffff;
+  --fg: #17221f;
+  --muted: #5d6a66;
+  --line: #d9e2df;
+  --accent: #0e8a73;
+  --danger: #c0392b;
+  --size: 32px;
+  color-scheme: light;
+
+  // the form fields in the studio's colours; each reads the token on the element it styles, so dark mode follows
+  --formidable-field-height: 2.25rem;
+  --formidable-field-font-size: 14px;
+  --formidable-label-font-size: 12px;
+  --formidable-field-padding-x: 10px;
+  --formidable-field-border-radius: 8px;
+  --formidable-color-field-background: var(--bg);
+  --formidable-color-field-background-hovered: var(--bg);
+  --formidable-color-field-background-focus: var(--bg);
+  --formidable-color-field-border: var(--line);
+  --formidable-color-field-border-hovered: var(--accent);
+  --formidable-color-field-border-focus: var(--accent);
+  --formidable-color-field-border-invalid: var(--danger);
+  --formidable-color-field-text: var(--fg);
+  --formidable-color-field-text-hovered: var(--fg);
+  --formidable-color-field-text-focus: var(--fg);
+  --formidable-color-field-placeholder: var(--muted);
+  --formidable-color-field-label: var(--muted);
+  --formidable-color-field-label-resting: var(--muted);
+  --formidable-color-field-label-floating: var(--muted);
+  --formidable-color-field-label-hovered: var(--muted);
+  --formidable-color-field-label-focus: var(--accent);
+  --formidable-color-field-label-invalid: var(--danger);
+  --formidable-color-field-hint: var(--muted);
+  --formidable-color-field-focus-box-shadow: 0 0 0 1px var(--accent);
+  --formidable-color-field-group-background: var(--bg);
+  --formidable-color-field-group-background-hovered: var(--bg);
+  --formidable-color-field-group-border: var(--line);
+  --formidable-color-field-group-border-focus: var(--accent);
+  --formidable-color-field-group-text: var(--fg);
+  --formidable-color-field-option-background-highlighted: color-mix(in srgb, var(--accent) 10%, transparent);
+  --formidable-color-field-option-background-hovered: color-mix(in srgb, var(--accent) 10%, transparent);
+  --formidable-color-field-option-background-selected: transparent;
+  --formidable-color-option-prefix-outer: var(--muted);
+  --formidable-color-option-prefix-outer-highlighted: var(--accent);
+  --formidable-color-option-prefix-outer-selected: var(--accent);
+  --formidable-color-option-prefix-inner-selected: var(--accent);
+}
+:root[data-theme='dark'] {
+  --bg: #121816;
+  --card: #1b2422;
+  --fg: #e9efed;
+  --muted: #9eaca8;
+  --line: #2b3734;
+  --accent: #4fc6aa;
+  --danger: #ef7a6d;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font:
+    14px/1.45 -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+button,
+select,
+input,
+textarea {
+  font: inherit;
+  color: var(--fg);
+}
+button {
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--card);
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--card);
+  font-weight: 600;
+}
+button.danger {
+  color: var(--danger);
+}
+button.icon {
+  min-width: 28px;
+  padding: 2px 6px;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+input[type='search'] {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+code,
+pre,
+textarea {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 12px;
+}
+pre {
+  white-space: pre-wrap;
+  background: var(--bg);
+  padding: 8px;
+  border-radius: 8px;
+}
+h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.muted {
+  color: var(--muted);
+}
+.hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+.error {
+  color: var(--danger);
+  font-size: 12px;
+}
+.group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.group > span {
+  color: var(--muted);
+  font-size: 12px;
+  margin-right: 2px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.badge {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: var(--accent);
+  color: var(--card);
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.empty {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 24px;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.drag-handle {
+  cursor: grab;
+  color: var(--muted);
+  user-select: none;
+  padding: 0 2px;
+}
+.cdk-drag-preview {
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.2);
+  background: var(--card);
+}
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}
+.cdk-drag-animating,
+.cdk-drop-list-dragging .cdk-drag {
+  transition: transform 150ms ease;
+}
+.fields {
+  display: grid;
+  gap: 12px;
+}
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

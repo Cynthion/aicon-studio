@@ -1,0 +1,10 @@
+.prices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.reveal {
+  margin-right: 4px;
+  border-color: transparent;
+  font-size: 12px;
+}

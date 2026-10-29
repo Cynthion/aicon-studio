@@ -1,0 +1,22 @@
+@if (confirm.request(); as request) {
+  <studio-ui-dialog
+    #dialog
+    [headline]="request.title"
+    (closed)="confirm.answer($event === 'confirm')">
+    <p>{{ request.body }}</p>
+    <div class="buttons">
+      <button
+        type="button"
+        (click)="dialog.close()">
+        {{ request.cancel ?? 'Cancel' }}
+      </button>
+      <button
+        type="button"
+        class="primary"
+        [class.danger]="request.danger"
+        (click)="dialog.close('confirm')">
+        {{ request.action }}
+      </button>
+    </div>
+  </studio-ui-dialog>
+}

@@ -1,0 +1,16 @@
+<dialog
+  #dialog
+  [attr.aria-labelledby]="headlineId"
+  (close)="closed.emit(dialog.returnValue)">
+  <header>
+    <h2 [id]="headlineId">{{ headline() }}</h2>
+    <button
+      type="button"
+      class="icon"
+      aria-label="Close"
+      (click)="close()">
+      ✕
+    </button>
+  </header>
+  <ng-content />
+</dialog>

@@ -1,8 +1,7 @@
 ---
 paths:
-  - '**/*.component.ts'
-  - '**/*.component.html'
-  - '**/*.directive.ts'
+  - 'studio/**/*.ts'
+  - 'studio/**/*.html'
 ---
 
 # Angular

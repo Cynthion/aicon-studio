@@ -44,7 +44,7 @@ Without `<slug>`, the script asks for one.
 
 | Process | Port       | Second Instance                                                                                    |
 | :------ | :--------- | :------------------------------------------------------------------------------------------------- |
-| Studio  | `54400`    | `node src/cli.ts example --port 54401`                                                             |
+| Studio  | `54400`    | `npm run build`, then `node src/cli.ts example --port 54401`                                       |
 | Specs   | Free ports | None needed: every spec listens on a free port, see [`impl/testing.md`](testing.md#writing-a-spec) |
 
 The `playwright` MCP server is a client of whatever studio is listening, so a session in a worktree opens the port of its own studio.

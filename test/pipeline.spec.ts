@@ -47,7 +47,7 @@ const generations = (): number => stub.requests.filter((r) => r.endpoint === 'ge
 const viewBox = (markup: string): string => /viewBox="([^"]+)"/.exec(markup)?.[1] ?? '';
 /** Polls the state until the job is over, so its browser closes before the server does. */
 const settled = async (port: number): Promise<void> => {
-  while (((await request(port, 'GET', '/api/state')).json['job'] as { running: boolean }).running) {
+  while (((await request(port, 'GET', '/api/state')).json['job'] as { running: boolean } | undefined)?.running) {
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
 };
@@ -295,5 +295,142 @@ describe('project', () => {
     await close(server);
 
     expect(job).toBeUndefined();
+  });
+});
+
+/** A studio over a project of `icons`, listening; `done` waits out the job and closes it. */
+const serve = async (icons: (Drawn | Rotated)[]): Promise<{ port: number; done: () => Promise<void> }> => {
+  ({ project } = makeProject({ icons, targetFiles: [] }));
+  const server = createServer(project, makeSettingsFile(settings));
+  const port = await listen(server);
+  return {
+    port,
+    done: async () => {
+      await settled(port);
+      await close(server);
+    }
+  };
+};
+const until = async (ready: () => boolean): Promise<void> => {
+  while (!ready()) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+};
+const onlySet = async (port: number): Promise<string> =>
+  ((await request(port, 'GET', '/api/state')).json['sets'] as { set: string }[])[0].set;
+const outlines = (set: string): string[] =>
+  fs
+    .readdirSync(setPath(set, ''))
+    .filter((file) => file.endsWith('.svg') && !file.endsWith('-filled.svg'))
+    .sort();
+
+describe('test runs', () => {
+  const RUN = { styles: ['soft'], quality: 'medium' };
+
+  it('draws only the chosen icons', async () => {
+    const studio = await serve(ICONS);
+    await request(studio.port, 'POST', '/api/runs', { body: { ...RUN, stems: ['home'] } });
+    const set = await onlySet(studio.port);
+    await studio.done();
+
+    expect([
+      fs.readdirSync(setPath(set, '')).sort(),
+      readSet(project, set).icons.map((icon) => icon.stem),
+      generations()
+    ]).toEqual([['_run.json', 'home-filled.svg', 'home.svg'], ['home'], 1]);
+  });
+
+  it('draws the rotations of a chosen icon', async () => {
+    const studio = await serve(ICONS);
+    await request(studio.port, 'POST', '/api/runs', { body: { ...RUN, stems: ['chevron-right'] } });
+    const set = await onlySet(studio.port);
+    await studio.done();
+
+    expect(outlines(set)).toEqual(['chevron-down.svg', 'chevron-right.svg']);
+  });
+
+  it('refuses a chosen icon that is no drawn icon of the config', async () => {
+    const studio = await serve(ICONS);
+    const replies = await Promise.all(
+      [['chevron-down'], ['nope']].map((stems) =>
+        request(studio.port, 'POST', '/api/runs', { body: { ...RUN, stems } })
+      )
+    );
+    await studio.done();
+
+    expect(replies.map((r) => r.status)).toEqual([400, 400]);
+  });
+
+  it('refuses an empty choice', async () => {
+    const studio = await serve(ICONS);
+    const reply = await request(studio.port, 'POST', '/api/runs', { body: { ...RUN, stems: [] } });
+    await studio.done();
+
+    expect(reply.status).toBe(400);
+  });
+
+  it('draws every drawn icon without a choice', async () => {
+    const studio = await serve(ICONS);
+    await request(studio.port, 'POST', '/api/runs', { body: RUN });
+    const set = await onlySet(studio.port);
+    await studio.done();
+
+    expect([outlines(set), generations()]).toEqual([
+      ['chevron-down.svg', 'chevron-right.svg', 'home.svg', 'search.svg'],
+      3
+    ]);
+  });
+});
+
+describe('stop', () => {
+  const RUN = { styles: ['soft'], quality: 'medium' };
+  const SIX_HOUSES = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].map((stem) => ({ stem, subject: 'a house' }));
+
+  it('starts no new drawing after a stop and keeps those in flight', async () => {
+    stub.delayMs = 1000;
+    const studio = await serve(SIX_HOUSES);
+    await request(studio.port, 'POST', '/api/runs', { body: RUN });
+    const set = await onlySet(studio.port);
+    await until(() => generations() === 4);
+    await request(studio.port, 'POST', '/api/stop');
+    await settled(studio.port);
+    const job = (await request(studio.port, 'GET', '/api/state')).json['job'] as Record<string, unknown>;
+    await studio.done();
+
+    expect([generations(), outlines(set).length, readSet(project, set).failed, job['running'], job['stopped']]).toEqual(
+      [4, 4, [], false, true]
+    );
+  });
+
+  it('makes no retry after a stop and lists nothing stopped as failed', async () => {
+    stub.answers.push({ status: 500, body: { error: { message: 'busy' } } });
+    const studio = await serve(HOME_ONLY);
+    await request(studio.port, 'POST', '/api/runs', { body: RUN });
+    const set = await onlySet(studio.port);
+    await until(() => generations() === 1);
+    await request(studio.port, 'POST', '/api/stop');
+    await studio.done();
+
+    expect([generations(), outlines(set), readSet(project, set).failed]).toEqual([1, [], []]);
+  });
+
+  it('refuses a stop without a running job', async () => {
+    const studio = await serve(HOME_ONLY);
+    const reply = await request(studio.port, 'POST', '/api/stop');
+    await studio.done();
+
+    expect(reply.status).toBe(400);
+  });
+});
+
+describe('icons', () => {
+  it('refuses to add while a job runs', async () => {
+    stub.delayMs = 1500;
+    const studio = await serve(HOME_ONLY);
+    await request(studio.port, 'POST', '/api/runs', { body: { styles: ['soft'], quality: 'medium' } });
+    const added = await request(studio.port, 'POST', '/api/icons', { body: { stem: 'gear', subject: 'a gear' } });
+    await studio.done();
+
+    expect(added.status).toBe(409);
   });
 });

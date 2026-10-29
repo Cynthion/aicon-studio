@@ -1,0 +1,174 @@
+<div class="toolbar">
+  <input
+    type="search"
+    placeholder="Filter icons"
+    aria-label="Filter icons"
+    [value]="studio.search()"
+    (input)="studio.search.set($any($event.target).value)" />
+  <span class="hint">{{ rows().length }} of {{ state().config.icons.length }}</span>
+  <span class="group">
+    <span>Size</span>
+    @for (size of sizes; track size) {
+      <button
+        type="button"
+        [attr.aria-pressed]="studio.prefs().size === size"
+        (click)="studio.updatePrefs({ size })">
+        {{ size }}
+      </button>
+    }
+  </span>
+  <span class="group">
+    <span>Filled</span>
+    <button
+      type="button"
+      [attr.aria-pressed]="studio.prefs().pair === 'side'"
+      (click)="studio.updatePrefs({ pair: 'side' })">
+      Beside
+    </button>
+    <button
+      type="button"
+      [attr.aria-pressed]="studio.prefs().pair === 'hover'"
+      (click)="studio.updatePrefs({ pair: 'hover' })">
+      On hover
+    </button>
+  </span>
+  <studio-ui-item-menu
+    text="Columns"
+    align="left"
+    [entries]="columnEntries()"
+    (selected)="toggleColumn($event)" />
+</div>
+<p
+  class="visually-hidden"
+  aria-live="polite">
+  {{ announcement() }}
+</p>
+@if (!state().sets.length) {
+  <div class="empty card">
+    <p>No sets yet. New run draws every icon in each chosen style.</p>
+    <button
+      type="button"
+      class="primary"
+      [disabled]="studio.busy()"
+      (click)="studio.dialog.set('run')">
+      New run
+    </button>
+  </div>
+}
+<div class="layout">
+  <div class="wrap card">
+    @if (rows().length) {
+      <table aria-label="Icons by column">
+        <thead>
+          <tr
+            cdkDropList
+            cdkDropListOrientation="horizontal"
+            (cdkDropListDropped)="drop($event)">
+            <th
+              class="stem"
+              scope="col">
+              Icon
+            </th>
+            @for (column of visible(); track column.id) {
+              @if (column.info) {
+                <th
+                  scope="col"
+                  cdkDrag
+                  cdkDragPreviewContainer="parent">
+                  <div class="colhead">
+                    <span
+                      class="drag-handle"
+                      cdkDragHandle
+                      aria-hidden="true">
+                      ⠿
+                    </span>
+                    <div>
+                      <b>{{ column.title }}</b>
+                      <span>{{ column.sub }}</span>
+                    </div>
+                    <studio-ui-item-menu
+                      [ariaLabel]="'Actions for ' + column.id"
+                      [entries]="entries(column)"
+                      (selected)="act(column, $event)" />
+                  </div>
+                </th>
+              } @else {
+                <th scope="col">
+                  <div class="colhead">
+                    <div>
+                      <b>{{ column.title }}</b>
+                      <span>{{ column.sub }}</span>
+                    </div>
+                  </div>
+                </th>
+              }
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (icon of rows(); track icon.stem) {
+            <tr>
+              <th
+                class="stem"
+                scope="row">
+                <code>{{ icon.stem }}</code>
+                <span>{{ subjectOf(icon) }}</span>
+                @if (referenceUrl(icon.stem); as url) {
+                  <span
+                    class="reference"
+                    title="Reference: later runs keep this composition">
+                    <i
+                      class="ic"
+                      [style.--src]="url"></i>
+                    referenced
+                  </span>
+                }
+              </th>
+              @for (column of visible(); track column.id) {
+                @let cell = cellState(column, icon, job());
+                @let reference = isReference(column, icon.stem);
+                <td [attr.data-state]="cell || null">
+                  <button
+                    type="button"
+                    class="cell"
+                    [class.selected]="isSelected(column, icon.stem)"
+                    [attr.aria-label]="icon.stem + ' in ' + column.title + (reference ? ', the reference' : '')"
+                    (click)="studio.selected.set({ column: column.id, stem: icon.stem })">
+                    <studio-ui-pair
+                      [outline]="fileUrl(column, icon.stem)"
+                      [fill]="fileUrl(column, icon.stem + '-filled')"
+                      [mode]="studio.prefs().pair" />
+                    @if (cell) {
+                      <span class="state">{{ cell }}</span>
+                    }
+                    @if (reference) {
+                      <span
+                        class="badge"
+                        title="This drawing is the reference: later runs keep its composition">
+                        reference
+                      </span>
+                    }
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <div class="empty">
+        <p>No icon matches '{{ studio.search() }}'.</p>
+        <button
+          type="button"
+          (click)="studio.search.set('')">
+          Clear filter
+        </button>
+      </div>
+    }
+  </div>
+  @if (selection(); as selection) {
+    <studio-icon-panel
+      [column]="selection.column"
+      [icon]="selection.icon" />
+  }
+</div>

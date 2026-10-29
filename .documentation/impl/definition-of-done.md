@@ -18,17 +18,17 @@ A change is done when every applicable item below holds. Stating that something 
 
 Every command runs from the repository root.
 
-| Area          | Command                                      | Gate  |
-| :------------ | :------------------------------------------- | :---: |
-| Formatting    | `npm run prettier:check`                     |  CI   |
-| Lint          | `npm run lint`                               |  CI   |
-| Markdown Lint | `npm run docs:lint`                          |  CI   |
-| Build         | `npm run build`                              |  CI   |
-| Tests         | `npm test`                                   |  CI   |
-| Visual Proof  | The served studio, `node src/cli.ts example` | Local |
+| Area          | Command                                                                                     | Gate  |
+| :------------ | :------------------------------------------------------------------------------------------ | :---: |
+| Formatting    | `npm run prettier:check`                                                                    |  CI   |
+| Lint          | `npm run lint`                                                                              |  CI   |
+| Markdown Lint | `npm run docs:lint`                                                                         |  CI   |
+| Build         | `npm run build`                                                                             |  CI   |
+| Tests         | `npm test`                                                                                  |  CI   |
+| Visual Proof  | The served studio, see **Visual Testing** in [`impl/testing.md`](testing.md#visual-testing) | Local |
 
 - **Chain**: `ci.yml` runs the CI gates in this order on every push to `main` and every pull request, and stops at the first failing step. It installs Chromium before the tests, because the pipeline rasterizes with it.
-- **No Typecheck Script**: `npm run build` is the type check; `tsc` compiles `src/` to `dist/`. The specs are type-checked by the lint, which parses them with type information.
+- **No Typecheck Script**: `npm run build` is the type check; `tsc` compiles `src/` to `dist/`, and `ng build` the page to `dist/studio/browser`. The specs are type-checked by the lint, which parses them with type information.
 - **Visual Proof**: a user-visible change is proven against the served studio, not only against a passing test. Reuse a studio that is already listening, never start or stop one that is already running.
 - **No Commit Hooks**: There is no Husky, lint-staged or commit hook. Every gate is run deliberately.
 - **Narrowest Scope First**: Run the narrowest scope first, such as one spec file. Widen to the full suite once the narrow scope passes.

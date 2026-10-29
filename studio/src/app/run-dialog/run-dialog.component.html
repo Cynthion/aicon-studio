@@ -1,0 +1,84 @@
+<studio-ui-dialog
+  #dialog
+  headline="New run"
+  (closed)="studio.dialog.set(undefined)">
+  @if (settingsDone()) {
+    <p class="hint">Every chosen icon is drawn once per chosen style, each style into its own set. Referenced icons keep the composition of their reference.</p>
+    <form
+      class="fields"
+      [formRoot]="form">
+      <formidable-field-decorator>
+        <formidable-checkbox-group-field
+          [formField]="form.styles"
+          [options]="styleOptions()" />
+        <div formidableFieldLabel>Styles</div>
+      </formidable-field-decorator>
+      <formidable-field-decorator>
+        <formidable-radio-group-field
+          [formField]="form.icons"
+          [options]="iconChoices()" />
+        <div formidableFieldLabel>Icons</div>
+        <div formidableFieldHint>A test run draws a few icons first, to judge a style before all are paid for.</div>
+      </formidable-field-decorator>
+      @if (testRun()) {
+        <formidable-field-decorator class="stems">
+          <formidable-checkbox-group-field
+            [formField]="form.stems"
+            [options]="stemOptions()" />
+          <div formidableFieldLabel>Chosen icons</div>
+          <div formidableFieldHint>Rotations follow their icon. Complete set in the column menu draws the rest later.</div>
+        </formidable-field-decorator>
+        @if (model().stems.length) {
+          <button
+            type="button"
+            class="clear"
+            (click)="clearStems()">
+            Clear the choice
+          </button>
+        }
+      }
+      <formidable-field-decorator>
+        <formidable-radio-group-field
+          [formField]="form.quality"
+          [options]="qualities" />
+        <div formidableFieldLabel>Quality</div>
+      </formidable-field-decorator>
+      <p aria-live="polite">{{ summary() }}</p>
+      @if (error(); as error) {
+        <p
+          class="error"
+          role="alert">
+          {{ error }}
+        </p>
+      }
+      <div class="buttons">
+        <button
+          type="button"
+          (click)="dialog.close()">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="primary"
+          [disabled]="!canStart() || form().submitting()">
+          {{ testRun() ? 'Start test run' : 'Start run' }}
+        </button>
+      </div>
+    </form>
+  } @else {
+    <p>Enter the endpoint in Settings first: a run draws through it.</p>
+    <div class="buttons">
+      <button
+        type="button"
+        (click)="dialog.close()">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="primary"
+        (click)="openSettings()">
+        Open Settings
+      </button>
+    </div>
+  }
+</studio-ui-dialog>

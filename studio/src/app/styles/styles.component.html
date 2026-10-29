@@ -1,0 +1,87 @@
+<div class="layout">
+  <nav aria-label="Styles">
+    <button
+      type="button"
+      class="primary"
+      (click)="newStyle()">
+      New style
+    </button>
+    @for (style of studio.state()!.styles; track style.name) {
+      <button
+        type="button"
+        [attr.aria-pressed]="!isNew() && editing()?.name === style.name"
+        (click)="edit(style.name)">
+        {{ style.name }}
+      </button>
+    }
+  </nav>
+  <section class="card editor">
+    @if (editing()) {
+      <form
+        class="fields"
+        [formRoot]="form">
+        <formidable-field-decorator>
+          <formidable-input-field [formField]="form.name" />
+          <div formidableFieldLabel>Name</div>
+          <div formidableFieldHint>Lowercase letters, digits and dashes; it names the set folders.</div>
+        </formidable-field-decorator>
+        <formidable-field-decorator>
+          <formidable-textarea-field
+            class="prompt"
+            [formField]="form.prompt" />
+          <div formidableFieldLabel>Prompt</div>
+          <div formidableFieldHint>Starts with a # heading; {{ '{subject}' }} is replaced by each icon's subject.</div>
+        </formidable-field-decorator>
+        @if (error(); as error) {
+          <p
+            class="error"
+            role="alert">
+            {{ error }}
+          </p>
+        }
+        <div class="actions">
+          <button
+            type="submit"
+            class="primary"
+            [disabled]="!changed() || form().submitting()">
+            Save
+          </button>
+          @if (changed() && !isNew()) {
+            <button
+              type="button"
+              (click)="revert()">
+              Revert
+            </button>
+          }
+          @if (!isNew()) {
+            <button
+              type="button"
+              (click)="duplicate()">
+              Duplicate
+            </button>
+            <span class="spacer"></span>
+            <button
+              type="button"
+              class="danger"
+              (click)="remove()">
+              Delete…
+            </button>
+          }
+        </div>
+      </form>
+      <formidable-field-decorator>
+        <formidable-select-field
+          [options]="stemOptions()"
+          [(value)]="previewStem" />
+        <div formidableFieldLabel>Preview for</div>
+      </formidable-field-decorator>
+      <pre aria-label="Preview of the prompt">{{ preview() }}</pre>
+    } @else if (studio.state()!.styles.length) {
+      <p class="muted">Choose a style to edit it, or write a new one.</p>
+    } @else {
+      <div class="empty">
+        <p>No styles yet. New style writes the first prompt.</p>
+      </div>
+    }
+  </section>
+</div>

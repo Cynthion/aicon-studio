@@ -1,0 +1,80 @@
+<header class="top">
+  <h1>Aicon Studio</h1>
+  @if (studio.state(); as state) {
+    <button
+      type="button"
+      class="project"
+      (click)="studio.dialog.set('project')">
+      Project: {{ folder() }}
+      <span class="path">{{ state.project }}</span>
+    </button>
+    <nav aria-label="Views">
+      <a
+        routerLink="/icons"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page">
+        Icons <span class="count">{{ state.config.icons.length }}</span>
+      </a>
+      <a
+        routerLink="/styles"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page">
+        Styles <span class="count">{{ state.styles.length }}</span>
+      </a>
+      <a
+        routerLink="/sets"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page">
+        Sets <span class="count">{{ state.sets.length }}</span>
+      </a>
+    </nav>
+    <span class="spacer"></span>
+    <studio-job-status />
+    <span class="group">
+      <button
+        type="button"
+        [attr.aria-pressed]="studio.prefs().theme === 'light'"
+        (click)="studio.updatePrefs({ theme: 'light' })">
+        Light
+      </button>
+      <button
+        type="button"
+        [attr.aria-pressed]="studio.prefs().theme === 'dark'"
+        (click)="studio.updatePrefs({ theme: 'dark' })">
+        Dark
+      </button>
+    </span>
+    <button
+      type="button"
+      (click)="studio.dialog.set('settings')">
+      Settings
+    </button>
+    <button
+      type="button"
+      class="primary"
+      [disabled]="studio.busy()"
+      [title]="studio.busy() ? 'Wait for the drawing job' : ''"
+      (click)="studio.dialog.set('run')">
+      New run
+    </button>
+    <studio-flow />
+  }
+</header>
+<main>
+  @if (studio.state()) {
+    <router-outlet />
+  }
+</main>
+@switch (studio.dialog()) {
+  @case ('settings') {
+    <studio-settings-dialog />
+  }
+  @case ('project') {
+    <studio-project-dialog />
+  }
+  @case ('run') {
+    <studio-run-dialog />
+  }
+}
+<studio-ui-confirm />
+<studio-ui-toast />

@@ -10,7 +10,9 @@ import {
   COMPLETE_SETTINGS,
   fileList,
   FIXTURES,
+  ICONS,
   listen,
+  makePage,
   makeProject,
   makeSettingsFile,
   read,
@@ -26,6 +28,7 @@ const SET = '2026-01-01-0000/soft';
 const FLIP: [number, number] = [509.1, 516.1];
 
 let dir: string;
+let page: string;
 let project: Project;
 let settingsFile: string;
 let server: http.Server;
@@ -34,7 +37,8 @@ let port: number;
 const start = async (options: Parameters<typeof makeProject>[0] = {}, settings?: Settings): Promise<void> => {
   ({ dir, project } = makeProject({ sets: [SET], ...options }));
   settingsFile = makeSettingsFile(settings);
-  server = createServer(project, settingsFile);
+  page = makePage();
+  server = createServer(project, settingsFile, page);
   port = await listen(server);
 };
 const api = (method: string, url: string, body?: unknown): Promise<Reply> => request(port, method, url, { body });
@@ -46,7 +50,7 @@ afterEach(async () => {
   await close(server);
 });
 
-describe('guard', () => {
+describe('page', () => {
   beforeEach(() => start());
 
   it('serves the page to the local host', async () => {
@@ -55,9 +59,35 @@ describe('guard', () => {
     expect([reply.status, reply.headers['content-type'], reply.text]).toEqual([
       200,
       'text/html; charset=utf-8',
-      expect.stringContaining('<title>Aicon Studio</title>')
+      read(path.join(page, 'index.html'))
     ]);
   });
+
+  it('serves a file of the page folder with its type', async () => {
+    const reply = await api('GET', '/main-AB12.js');
+
+    expect([reply.status, reply.headers['content-type'], reply.text]).toEqual([
+      200,
+      'text/javascript; charset=utf-8',
+      read(path.join(page, 'main-AB12.js'))
+    ]);
+  });
+
+  it('refuses a path outside the page folder', async () => {
+    const replies = await Promise.all([api('GET', '/..%2Fpackage.json'), api('GET', '/a/main-AB12.js')]);
+
+    expect(replies.map((r) => r.status)).toEqual([404, 404]);
+  });
+
+  it('answers 404 for a missing page file', async () => {
+    const reply = await api('GET', '/nope.js');
+
+    expect(reply.status).toBe(404);
+  });
+});
+
+describe('guard', () => {
+  beforeEach(() => start());
 
   it('accepts localhost as host', async () => {
     const reply = await request(port, 'GET', '/api/state', { headers: { Host: `localhost:${port}` } });
@@ -198,6 +228,109 @@ describe('subjects', () => {
     const reply = await api('PUT', '/api/subjects/home', { subject: ' ' });
 
     expect(reply.status).toBe(400);
+  });
+});
+
+describe('icons', () => {
+  beforeEach(() => start());
+  const config = (): Config => readJson<Config>(path.join(dir, CONFIG_FILE));
+
+  it('appends a drawn icon with a trimmed subject', async () => {
+    await api('POST', '/api/icons', { stem: 'gear', subject: ' a gear ' });
+
+    expect(config().icons.at(-1)).toEqual({ stem: 'gear', subject: 'a gear' });
+  });
+
+  it('appends a rotation and writes its files into every set that holds its from outline', async () => {
+    const rotation = { stem: 'chevron-up', from: 'chevron-right', rotate: 270 };
+    await api('POST', '/api/icons', rotation);
+
+    expect([
+      config().icons.at(-1),
+      read(setFile('chevron-up.svg')).includes('rotate(270 '),
+      read(setFile('chevron-up-filled.svg')).includes('rotate(270 ')
+    ]).toEqual([rotation, true, true]);
+  });
+
+  it('refuses a stem that exists', async () => {
+    const reply = await api('POST', '/api/icons', { stem: 'home', subject: 'x' });
+
+    expect(reply.status).toBe(400);
+  });
+
+  it('refuses a stem outside letters, digits, dashes and underscores', async () => {
+    const reply = await api('POST', '/api/icons', { stem: 'a b', subject: 'x' });
+
+    expect(reply.status).toBe(400);
+  });
+
+  it('refuses an empty subject', async () => {
+    const reply = await api('POST', '/api/icons', { stem: 'gear', subject: '  ' });
+
+    expect(reply.status).toBe(400);
+  });
+
+  it('refuses a rotation of an unknown icon or of a rotation', async () => {
+    const replies = await Promise.all(
+      ['nope', 'chevron-down'].map((from) => api('POST', '/api/icons', { stem: 'chevron-up', from, rotate: 270 }))
+    );
+
+    expect(replies.map((r) => r.status)).toEqual([400, 400]);
+  });
+
+  it('refuses an angle other than 90, 180, 270', async () => {
+    const reply = await api('POST', '/api/icons', { stem: 'chevron-up', from: 'chevron-right', rotate: 45 });
+
+    expect(reply.status).toBe(400);
+  });
+
+  it('removes the icon and its reference', async () => {
+    await api('PUT', '/api/references/home', { set: SET });
+    await api('DELETE', '/api/icons/home');
+
+    expect([
+      config().icons.some((icon) => icon.stem === 'home'),
+      fs.existsSync(path.join(project.references, 'home.svg'))
+    ]).toEqual([false, false]);
+  });
+
+  it('keeps the files of the sets and the target', async () => {
+    await api('DELETE', '/api/icons/home');
+
+    expect([fs.existsSync(setFile('home.svg')), fs.existsSync(path.join(project.target, 'home.svg'))]).toEqual([
+      true,
+      true
+    ]);
+  });
+
+  it('refuses to remove an icon that rotations come from', async () => {
+    const reply = await api('DELETE', '/api/icons/chevron-right');
+
+    expect([reply.status, String(reply.json['error']).includes('chevron-down')]).toEqual([400, true]);
+  });
+
+  it('refuses to remove an unknown icon', async () => {
+    const reply = await api('DELETE', '/api/icons/nope');
+
+    expect(reply.status).toBe(400);
+  });
+
+  it('writes the icons in the given order', async () => {
+    await api('PUT', '/api/icons', { order: ['search', 'home', 'chevron-down', 'chevron-right'] });
+
+    expect(config().icons).toEqual([ICONS[1], ICONS[0], ICONS[3], ICONS[2]]);
+  });
+
+  it('refuses an order that is not every stem once', async () => {
+    const replies = await Promise.all(
+      [
+        ['search', 'home', 'chevron-down'],
+        ['search', 'home', 'home', 'chevron-down', 'chevron-right'],
+        ['search', 'home', 'chevron-down', 'nope']
+      ].map((order) => api('PUT', '/api/icons', { order }))
+    );
+
+    expect([replies.map((r) => r.status), config().icons]).toEqual([[400, 400, 400], ICONS]);
   });
 });
 

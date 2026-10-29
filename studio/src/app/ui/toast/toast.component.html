@@ -1,0 +1,23 @@
+<div
+  class="live"
+  role="status">
+  @if (toasts.current(); as toast) {
+    <div
+      class="toast"
+      [class.error]="toast.error">
+      @if (toast.error) {
+        <span aria-hidden="true">⚠</span>
+      }
+      <span>{{ toast.text }}</span>
+      @if (toast.error) {
+        <button
+          type="button"
+          class="icon"
+          aria-label="Dismiss"
+          (click)="toasts.dismiss()">
+          ✕
+        </button>
+      }
+    </div>
+  }
+</div>

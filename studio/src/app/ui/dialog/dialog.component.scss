@@ -1,0 +1,22 @@
+dialog {
+  width: min(520px, 92vw);
+  max-height: 90vh;
+  padding: 16px 20px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--fg);
+}
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.35);
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+header button {
+  border-color: transparent;
+}

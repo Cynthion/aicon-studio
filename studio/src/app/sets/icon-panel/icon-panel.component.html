@@ -1,0 +1,139 @@
+<aside
+  class="card"
+  [attr.aria-label]="'Icon panel: ' + stem()">
+  <header>
+    <div>
+      <h2>{{ stem() }}</h2>
+      <span class="muted">{{ column().title }} {{ column().info ? column().sub : '' }}</span>
+      @if (isReference()) {
+        <span class="badge">reference</span>
+      }
+    </div>
+    <button
+      type="button"
+      class="icon"
+      aria-label="Close"
+      (click)="close()">
+      ✕
+    </button>
+  </header>
+  <div class="big">
+    <figure>
+      <div class="frame">
+        <i
+          class="ic"
+          [class.none]="!outline()"
+          [style.--src]="outline() ? 'url(' + outline() + ')' : null"></i>
+      </div>
+      <figcaption>Outline</figcaption>
+    </figure>
+    <figure>
+      @if (canFlip()) {
+        <div
+          #frame
+          class="frame flip"></div>
+        <figcaption>
+          {{ deriving() ? 'Deriving the fill…' : 'Filled · click a region to switch it between filled and white' }}
+        </figcaption>
+      } @else {
+        <div class="frame">
+          <i
+            class="ic"
+            [class.none]="!fill()"
+            [style.--src]="fill() ? 'url(' + fill() + ')' : null"></i>
+        </div>
+        <figcaption>Filled</figcaption>
+      }
+    </figure>
+  </div>
+  <div class="sizes">
+    @for (size of sizes; track size) {
+      <span [style.--size]="size + 'px'">
+        <studio-ui-pair
+          [outline]="outline()"
+          [fill]="fill()" />
+        {{ size }}
+      </span>
+    }
+    <span style="--size: 48px">
+      <studio-ui-pair
+        mode="hover"
+        [outline]="outline()"
+        [fill]="fill()" />
+      hover
+    </span>
+  </div>
+  @if (from(); as from) {
+    <p>Rotation of {{ from }}.</p>
+  } @else if (drawnFrom(); as drawnFrom) {
+    <p>
+      <span class="muted">Drawn from:</span>
+      {{ drawnFrom }}
+      @if (drawnFrom !== subject()) {
+        <span class="muted">· the subject has changed since, see Icons</span>
+      }
+    </p>
+  }
+  @if (prompt(); as prompt) {
+    <details>
+      <summary>Prompt of this set</summary>
+      <pre>{{ prompt }}</pre>
+    </details>
+  }
+  <div class="actions">
+    @if (from(); as from) {
+      <button
+        type="button"
+        (click)="openFrom()">
+        Open {{ from }}: reference, flip and redraw there
+      </button>
+    } @else {
+      @if (outline() && !isReference()) {
+        <button
+          type="button"
+          (click)="useAsReference()">
+          {{ referenced() ? 'Replace the reference with this drawing' : 'Use as reference' }}
+        </button>
+      }
+      @if (referenced()) {
+        <button
+          type="button"
+          (click)="removeReference()">
+          Remove reference
+        </button>
+      }
+      @if (outline()) {
+        <button
+          type="button"
+          [disabled]="describing()"
+          (click)="describe()">
+          {{ describing() ? 'Writing subject…' : 'Write subject from this drawing' }}
+        </button>
+      }
+      @if (inSet()) {
+        <button
+          type="button"
+          [disabled]="studio.busy()"
+          [title]="studio.busy() ? 'Wait for the drawing job' : ''"
+          (click)="redraw()">
+          {{ redrawLabel() }}
+        </button>
+      }
+      @if (flips().length) {
+        <button
+          type="button"
+          title="⌘Z / Ctrl+Z"
+          [disabled]="studio.busy() || deriving()"
+          (click)="undoFlip()">
+          Undo last flip
+        </button>
+        <button
+          type="button"
+          [disabled]="studio.busy() || deriving()"
+          (click)="resetFlips()">
+          Reset {{ flips().length }} flip{{ flips().length > 1 ? 's' : '' }}
+        </button>
+      }
+    }
+  </div>
+</aside>

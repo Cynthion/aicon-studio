@@ -1,0 +1,24 @@
+// a row of its own under the top bar, while the setup is open
+:host {
+  flex-basis: 100%;
+}
+:host:empty {
+  display: none;
+}
+ol {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 4px 10px;
+  list-style: none;
+  border: 1px dashed var(--accent);
+  border-radius: 10px;
+  font-size: 12px;
+}
+li {
+  color: var(--muted);
+}
+li.done {
+  color: var(--accent);
+}

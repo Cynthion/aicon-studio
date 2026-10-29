@@ -1,0 +1,41 @@
+<button
+  type="button"
+  ngMenuTrigger
+  [class.icon]="!text()"
+  [menu]="menu"
+  [attr.aria-label]="text() ? null : ariaLabel()">
+  {{ text() ?? '⋯' }}
+</button>
+<div
+  #menu="ngMenu"
+  ngMenu
+  class="menu"
+  [class.left]="align() === 'left'"
+  (itemSelected)="selected.emit($any($event))">
+  <ng-template ngMenuContent>
+    @for (entry of entries(); track entry.value) {
+      @if (entry.separator) {
+        <div
+          class="separator"
+          role="separator"></div>
+      }
+      <div
+        ngMenuItem
+        class="entry"
+        [value]="entry.value"
+        [disabled]="!!entry.disabled"
+        [role]="entry.checked === undefined ? 'menuitem' : 'menuitemcheckbox'"
+        [attr.aria-checked]="entry.checked ?? null"
+        [class.danger]="entry.danger">
+        @if (entry.checked !== undefined) {
+          <span
+            class="check"
+            aria-hidden="true">
+            {{ entry.checked ? '✓' : '' }}
+          </span>
+        }
+        {{ entry.label }}
+      </div>
+    }
+  </ng-template>
+</div>

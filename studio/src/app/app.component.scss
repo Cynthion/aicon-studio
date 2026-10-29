@@ -1,0 +1,59 @@
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+}
+h1 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.project {
+  display: grid;
+  justify-items: start;
+  max-width: 240px;
+  text-align: left;
+}
+.path {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11px;
+}
+nav {
+  display: inline-flex;
+  gap: 4px;
+}
+nav a {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--fg);
+  text-decoration: none;
+}
+nav a:hover {
+  border-color: var(--accent);
+}
+nav a.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--card);
+}
+.count {
+  opacity: 0.7;
+  font-size: 12px;
+}
+.spacer {
+  flex: 1;
+}
+main {
+  padding: 16px;
+}

@@ -113,6 +113,14 @@ export const makeSettingsFile = (settings?: Settings): string => {
   return file;
 };
 
+/** A built page in a temporary folder: `index.html` and one script. */
+export const makePage = (): string => {
+  const dir = tmpDir();
+  fs.writeFileSync(path.join(dir, 'index.html'), '<!doctype html><title>Aicon Studio</title>\n');
+  fs.writeFileSync(path.join(dir, 'main-AB12.js'), 'console.log("studio");\n');
+  return dir;
+};
+
 /** Listens on a free loopback port and returns it. */
 export const listen = (server: http.Server): Promise<number> =>
   new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve((server.address() as { port: number }).port)));

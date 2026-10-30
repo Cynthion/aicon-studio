@@ -1,8 +1,8 @@
-import { Component, inject, signal, viewChild } from '@angular/core';
-import { form, FormField, FormRoot, pattern, required, schema } from '@angular/forms/signals';
+import { Component, computed, inject, signal, viewChild } from '@angular/core';
+import { form, FormField, FormRoot, pattern, required, schema, validate } from '@angular/forms/signals';
 import { FieldDecorator, FieldHint, FieldLabel, FieldSuffix, InputField } from '@cynthion/ngx-formidable';
 import { ApiService } from '../api/api.service';
-import { messageOf } from '../api/studio.helpers';
+import { isDrawn, messageOf, money, priceError, runSummary } from '../api/studio.helpers';
 import { StudioService } from '../api/studio.service';
 import { DialogComponent } from '../ui/dialog/dialog.component';
 import { ToastService } from '../ui/toast/toast.service';
@@ -20,6 +20,11 @@ interface SettingsModel {
 const PRICE = /^(\d+(\.\d*)?|\.\d+)?$/;
 
 const price = (text: string): number | undefined => (text.trim() ? Number(text) : undefined);
+
+const priceRule = (own: string, other: string): { kind: string; message: string } | undefined => {
+  const message = priceError(own, other);
+  return message ? { kind: 'price', message } : undefined;
+};
 
 /** The endpoint, its key, the two models and the prices, stored per user outside the project. */
 @Component({
@@ -67,9 +72,24 @@ export class SettingsDialogComponent {
       required(path.describeModel, { message: 'Enter the describe model' });
       pattern(path.pricePlain, PRICE, { message: 'A price such as 0.04' });
       pattern(path.priceReferenced, PRICE, { message: 'A price such as 0.06' });
+      validate(path.pricePlain, (field) => priceRule(field.value(), field.valueOf(path.priceReferenced)));
+      validate(path.priceReferenced, (field) => priceRule(field.value(), field.valueOf(path.pricePlain)));
     }),
     { submission: { action: () => this.save() } }
   );
+
+  /** What the prices entered so far make of a whole run, so their effect shows before they are saved. */
+  protected readonly example = computed(() => {
+    const state = this.studio.state()!;
+    const { pricePlain, priceReferenced } = this.model();
+    const stems = state.config.icons.filter(isDrawn).map((icon) => icon.stem);
+    const settings = { ...state.settings, pricePlain: price(pricePlain), priceReferenced: price(priceReferenced) };
+    const { cost } = runSummary({ ...state, settings }, stems, 1);
+    if (cost === null || Number.isNaN(cost) || !stems.length) {
+      return undefined;
+    }
+    return `A run of ${stems.length} icon${stems.length === 1 ? '' : 's'} in one style: ${money(cost)}.`;
+  });
 
   private async save(): Promise<undefined> {
     const m = this.model();

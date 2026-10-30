@@ -55,6 +55,9 @@
     </button>
   </div>
 }
+@if (state().sets.length && !selection()) {
+  <p class="hint next">Click a cell to compare, flip or redraw the icon. The ⋯ of a column completes or adopts its set.</p>
+}
 <div class="layout">
   <div class="wrap card">
     @if (rows().length) {

@@ -157,6 +157,25 @@ export const runSummary = (
   };
 };
 
+/** How the estimate of the stems in `styles` styles adds up, empty without both prices. */
+export const costBreakdown = (state: State, stems: readonly string[], styles: number): string => {
+  const { pricePlain, priceReferenced } = state.settings;
+  if (pricePlain === undefined || priceReferenced === undefined) {
+    return '';
+  }
+  const { images, referenced } = runSummary(state, stems, styles);
+  const plain = images - referenced;
+  return [
+    ...(plain ? [`${plain} plain × $${pricePlain}`] : []),
+    ...(referenced ? [`${referenced} referenced × $${priceReferenced}`] : [])
+  ].join(' + ');
+};
+
+/** Why a price field cannot stay as it is: an estimate needs both prices or neither. */
+export const priceError = (own: string, other: string): string | undefined => {
+  return !own.trim() && other.trim() ? 'Enter this price too, or clear the other one' : undefined;
+};
+
 /** The remembered choice of a test run, without the stems that are no drawn icon any more. */
 export const chosenStems = (state: State, remembered: readonly string[]): string[] => {
   const drawn = new Set(state.config.icons.filter(isDrawn).map((icon) => icon.stem));

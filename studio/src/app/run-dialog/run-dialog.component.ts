@@ -1,10 +1,21 @@
 import { Component, computed, inject, signal, viewChild } from '@angular/core';
 import { form, FormField, FormRoot, schema, validate } from '@angular/forms/signals';
+import { Router } from '@angular/router';
 import { CheckboxGroupField, FieldDecorator, FieldHint, FieldLabel, RadioGroupField } from '@cynthion/ngx-formidable';
 import type { Quality } from '../api/api.model';
 import { ApiService } from '../api/api.service';
-import { chosenStems, flowSteps, isDrawn, messageOf, money, runSummary } from '../api/studio.helpers';
+import {
+  chosenStems,
+  costBreakdown,
+  flowSteps,
+  isDrawn,
+  messageOf,
+  money,
+  nextStep,
+  runSummary
+} from '../api/studio.helpers';
 import { StudioService } from '../api/studio.service';
+import type { FlowStep } from '../api/studio.model';
 import { DialogComponent } from '../ui/dialog/dialog.component';
 import { ToastService } from '../ui/toast/toast.service';
 
@@ -17,6 +28,13 @@ interface RunModel {
 }
 
 const QUALITIES = ['low', 'medium', 'high'].map((value) => ({ value }));
+
+/** What a run lacks, in the order of the setup, and the control that leads to it. */
+const SETUP: Partial<Record<FlowStep['key'], { text: string; action: string }>> = {
+  settings: { text: 'Enter the endpoint in Settings first: a run draws through it.', action: 'Open Settings' },
+  icons: { text: 'Add an icon first: a run draws every icon.', action: 'Open Icons' },
+  styles: { text: 'Write a style first: a run draws in each chosen style.', action: 'Open Styles' }
+};
 
 /** Draws every icon, or a test run of chosen icons, once per chosen style, after showing the image count and cost. */
 @Component({
@@ -38,6 +56,7 @@ export class RunDialogComponent {
   protected readonly studio = inject(StudioService);
   private readonly api = inject(ApiService);
   private readonly toasts = inject(ToastService);
+  private readonly router = inject(Router);
 
   private readonly dialog = viewChild.required(DialogComponent);
   private readonly state = computed(() => this.studio.state()!);
@@ -52,7 +71,11 @@ export class RunDialogComponent {
   protected readonly stemOptions = computed(() =>
     this.drawn().map(({ stem, subject }) => ({ value: stem, label: `${stem} · ${subject}` }))
   );
-  protected readonly settingsDone = computed(() => flowSteps(this.state())[0].done);
+  private readonly step = computed(() => nextStep(flowSteps(this.state()))?.key);
+  protected readonly setup = computed(() => {
+    const step = this.step();
+    return step && SETUP[step];
+  });
   protected readonly error = signal<string | undefined>(undefined);
   protected readonly model = signal<RunModel>({
     styles: [],
@@ -87,12 +110,28 @@ export class RunDialogComponent {
     if (!icons) {
       return 'Choose at least one icon.';
     }
-    const { images, referenced, cost } = runSummary(this.state(), this.stems(), styles);
-    return `${icons} icon${icons === 1 ? '' : 's'} × ${styles} style${styles === 1 ? '' : 's'} = ${images} images, ${referenced} of them referenced${cost === null ? '' : `: ${money(cost)}`}.`;
+    const { images, referenced } = runSummary(this.state(), this.stems(), styles);
+    return `${icons} icon${icons === 1 ? '' : 's'} × ${styles} style${styles === 1 ? '' : 's'} = ${images} images, ${referenced} of them referenced.`;
+  });
+  protected readonly estimate = computed(() => {
+    const styles = this.model().styles.length;
+    const { cost } = runSummary(this.state(), this.stems(), styles);
+    return cost === null || !this.canStart()
+      ? undefined
+      : { cost: money(cost), breakdown: costBreakdown(this.state(), this.stems(), styles) };
   });
 
   protected openSettings(): void {
     this.studio.dialog.set('settings');
+  }
+
+  protected followSetup(): void {
+    if (this.step() === 'settings') {
+      this.openSettings();
+      return;
+    }
+    this.dialog().close();
+    void this.router.navigateByUrl(`/${this.step()}`);
   }
 
   protected clearStems(): void {

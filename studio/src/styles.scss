@@ -1,15 +1,17 @@
 // The studio's theme and the controls every view shares. A component styles only what is its own.
 @use '@cynthion/ngx-formidable/styles/ngx-formidable';
 
-// the neutrals carry the accent's hue, and danger is the red of its palette
+// EnerQi's Ocean Pearl palette in EnerQi's roles: accent is the fill, strong its hover, emphasis the tint behind a selection
 :root {
-  --bg: #f5f6f9;
+  --bg: #eff4f6;
   --card: #ffffff;
-  --fg: #1b1f27;
-  --muted: #616771;
-  --line: #dce0e7;
-  --accent: #2563eb;
-  --danger: #dc2626;
+  --fg: #192122;
+  --muted: #606a6b;
+  --line: rgb(0 0 0 / 12%);
+  --accent: #28828c;
+  --accent-strong: #136a73;
+  --accent-emphasis: #ccedf2;
+  --danger: #cd475b;
   --size: 32px;
   color-scheme: light;
 
@@ -43,22 +45,25 @@
   --formidable-color-field-group-border: var(--line);
   --formidable-color-field-group-border-focus: var(--accent);
   --formidable-color-field-group-text: var(--fg);
-  --formidable-color-field-option-background-highlighted: color-mix(in srgb, var(--accent) 10%, transparent);
-  --formidable-color-field-option-background-hovered: color-mix(in srgb, var(--accent) 10%, transparent);
+  --formidable-color-field-option-background-highlighted: var(--accent-emphasis);
+  --formidable-color-field-option-background-hovered: var(--accent-emphasis);
   --formidable-color-field-option-background-selected: transparent;
   --formidable-color-option-prefix-outer: var(--muted);
   --formidable-color-option-prefix-outer-highlighted: var(--accent);
   --formidable-color-option-prefix-outer-selected: var(--accent);
-  --formidable-color-option-prefix-inner-selected: var(--accent);
+  // the inner mark exists only on a selected option, and the library applies its -selected colour only to a focused, unhovered group
+  --formidable-color-option-prefix-inner: var(--accent);
 }
 :root[data-theme='dark'] {
-  --bg: #13171b;
-  --card: #1e2228;
-  --fg: #eaeef2;
-  --muted: #a1a9b3;
-  --line: #2e353d;
-  --accent: #60a5fa;
-  --danger: #f87171;
+  --bg: #192122;
+  --card: #313a3b;
+  --fg: #eff4f6;
+  --muted: #cad3d4;
+  --line: rgb(255 255 255 / 14%);
+  --accent: #7abec7;
+  --accent-strong: #aadbe2;
+  --accent-emphasis: #145a62;
+  --danger: #fe8894;
   color-scheme: dark;
 }
 
@@ -99,7 +104,7 @@ button:hover:not(:disabled) {
   border-color: var(--accent);
 }
 button[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--accent) 14%, var(--card));
+  background: var(--accent-emphasis);
   border-color: var(--accent);
 }
 // a constructive action is filled with the accent, a destructive one is red; a confirmed destructive one is filled red
@@ -108,6 +113,10 @@ button.primary {
   border-color: var(--accent);
   color: var(--card);
   font-weight: 600;
+}
+button.primary:not(.danger):hover:not(:disabled) {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
 }
 button.danger {
   border-color: var(--danger);
@@ -230,7 +239,11 @@ h2 {
   gap: 12px;
 }
 .buttons {
+  position: sticky;
+  bottom: 0;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  padding-block: 8px;
+  background: var(--card);
 }

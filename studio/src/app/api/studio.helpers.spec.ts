@@ -3,6 +3,7 @@ import {
   cellState,
   chosenStems,
   columns,
+  costBreakdown,
   costLabel,
   fileUrl,
   flowSteps,
@@ -10,6 +11,7 @@ import {
   jobText,
   missingStems,
   nextStep,
+  priceError,
   promptOf,
   reorder,
   runSummary,
@@ -301,5 +303,48 @@ describe('stemError', () => {
 
   it('refuses a stem that names a fill', () => {
     expect(stemError('home-filled', ICONS)).toEqual(expect.any(String));
+  });
+});
+
+describe('costBreakdown', () => {
+  const priced = (references: State['references'] = {}): State =>
+    state({ settings: { ...state().settings, pricePlain: 0.04, priceReferenced: 0.06 }, references });
+
+  it('names both kinds of image', () => {
+    expect(costBreakdown(priced({ home: 1 }), ['home', 'search'], 2)).toBe('2 plain × $0.04 + 2 referenced × $0.06');
+  });
+
+  it('drops the referenced term when there are none', () => {
+    expect(costBreakdown(priced(), ['home', 'search'], 2)).toBe('4 plain × $0.04');
+  });
+
+  it('drops the plain term when there are none', () => {
+    expect(costBreakdown(priced({ home: 1 }), ['home'], 2)).toBe('2 referenced × $0.06');
+  });
+
+  it('is empty without both prices', () => {
+    const s = state({ settings: { ...state().settings, pricePlain: 0.04 } });
+
+    expect(costBreakdown(s, ['home'], 1)).toBe('');
+  });
+});
+
+describe('priceError', () => {
+  const MISSING = 'Enter this price too, or clear the other one';
+
+  it('asks for the price the other field lacks', () => {
+    expect(priceError('', '0.04')).toBe(MISSING);
+  });
+
+  it('accepts two empty prices', () => {
+    expect(priceError('', '')).toBeUndefined();
+  });
+
+  it('leaves a filled price alone', () => {
+    expect(priceError('0.04', '')).toBeUndefined();
+  });
+
+  it('counts a blank as empty', () => {
+    expect(priceError('  ', '0.04')).toBe(MISSING);
   });
 });

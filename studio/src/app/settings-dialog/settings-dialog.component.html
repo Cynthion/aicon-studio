@@ -38,17 +38,30 @@
       <div formidableFieldLabel>Describe model</div>
       <div formidableFieldHint>A chat model with image input; it writes subjects from drawings.</div>
     </formidable-field-decorator>
-    <div class="prices">
-      <formidable-field-decorator>
-        <formidable-input-field [formField]="form.pricePlain" />
-        <div formidableFieldLabel>Price per plain image, in $</div>
-      </formidable-field-decorator>
-      <formidable-field-decorator>
-        <formidable-input-field [formField]="form.priceReferenced" />
-        <div formidableFieldLabel>Price per referenced image, in $</div>
-      </formidable-field-decorator>
-    </div>
-    <p class="hint">The prices only drive the cost estimates; leave both empty to hide them.</p>
+    <fieldset class="estimates">
+      <legend>Cost estimates, optional</legend>
+      <p class="hint">Shows what a run costs before it starts. The studio sets no limit, and the endpoint bills the real amount.</p>
+      <div class="prices">
+        <formidable-field-decorator>
+          <formidable-input-field [formField]="form.pricePlain" />
+          <div formidableFieldLabel>Price per plain image, in $</div>
+          <div formidableFieldHint>Drawn from its subject alone.</div>
+        </formidable-field-decorator>
+        <formidable-field-decorator>
+          <formidable-input-field [formField]="form.priceReferenced" />
+          <div formidableFieldLabel>Price per referenced image, in $</div>
+          <div formidableFieldHint>Drawn with a reference, often billed higher.</div>
+        </formidable-field-decorator>
+      </div>
+      <p class="hint">
+        Take both from the endpoint's pricing, for one 1024 × 1024 image at the quality used most: one price applies to every quality. Rotations cost nothing.
+      </p>
+      @if (example(); as example) {
+        <p aria-live="polite">
+          <b>{{ example }}</b>
+        </p>
+      }
+    </fieldset>
     @if (error(); as error) {
       <p
         class="error"

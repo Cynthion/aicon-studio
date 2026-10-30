@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, linkedSignal, signal, untracked } from '@angular/core';
 import { disabled, form, FormField, FormRoot, schema, validate } from '@angular/forms/signals';
 import {
   FieldDecorator,
@@ -10,8 +10,8 @@ import {
 } from '@cynthion/ngx-formidable';
 import { ApiService } from '../api/api.service';
 import { isDrawn, messageOf, promptOf, styleNameError, stylePromptError } from '../api/studio.helpers';
-import { StudioService, type StyleDraft } from '../api/studio.service';
-import type { Unsaved } from '../app.routes';
+import { StudioService } from '../api/studio.service';
+import type { StyleDraft, Unsaved } from '../api/studio.model';
 import { ConfirmService } from '../ui/confirm/confirm.service';
 import { ToastService } from '../ui/toast/toast.service';
 
@@ -40,8 +40,12 @@ export class StylesComponent implements Unsaved {
   private readonly toasts = inject(ToastService);
 
   private readonly state = computed(() => this.studio.state()!);
-  /** The style open in the editor, as saved; undefined while none is open. */
-  protected readonly editing = signal<StyleDraft | undefined>(undefined);
+  private readonly project = computed(() => this.state().project);
+  /** The style open in the editor, as saved; undefined while none is open, and again after a project switch. */
+  protected readonly editing = linkedSignal<string, StyleDraft | undefined>({
+    source: this.project,
+    computation: () => undefined
+  });
   protected readonly isNew = computed(() => !!this.editing()?.isNew);
   protected readonly error = signal<string | undefined>(undefined);
   protected readonly model = signal<StyleModel>({ name: '', prompt: '' });
@@ -70,7 +74,10 @@ export class StylesComponent implements Unsaved {
       .config.icons.filter(isDrawn)
       .map(({ stem }) => ({ value: stem }))
   );
-  protected readonly previewStem = signal<string | null>(this.stemOptions()[0]?.value ?? null);
+  protected readonly previewStem = linkedSignal<string, string | null>({
+    source: this.project,
+    computation: () => untracked(this.stemOptions)[0]?.value ?? null
+  });
   protected readonly preview = computed(() => promptOf(this.state(), this.model().prompt, this.previewStem() ?? ''));
 
   constructor() {

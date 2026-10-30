@@ -75,7 +75,7 @@
           [(value)]="previewStem" />
         <div formidableFieldLabel>Preview for</div>
       </formidable-field-decorator>
-      <pre aria-label="Preview of the prompt">{{ preview() }}</pre>
+      <pre>{{ preview() }}</pre>
     } @else if (studio.state()!.styles.length) {
       <p class="muted">Choose a style to edit it, or write a new one.</p>
     } @else {

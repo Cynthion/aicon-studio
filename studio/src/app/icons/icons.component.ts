@@ -1,11 +1,12 @@
 import { CdkDrag, type CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
 import { afterNextRender, afterRenderEffect, Component, computed, inject, Injector, signal } from '@angular/core';
 import type { Icon } from '../api/api.model';
-import { columns, fileUrl, focusMenu, isDrawn } from '../api/studio.helpers';
+import { columns, fileUrl, isDrawn } from '../api/studio.helpers';
 import { StudioService } from '../api/studio.service';
-import type { Unsaved } from '../app.routes';
+import type { Unsaved } from '../api/studio.model';
 import { ConfirmService } from '../ui/confirm/confirm.service';
 import { ItemMenuComponent, type MenuEntry } from '../ui/item-menu/item-menu.component';
+import { focusMenu } from '../ui/item-menu/item-menu.helpers';
 import { PairComponent } from '../ui/pair/pair.component';
 import { AddIconDialogComponent } from './add-icon-dialog/add-icon-dialog.component';
 

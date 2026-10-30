@@ -18,8 +18,8 @@ None.
   - **Context**: **Adopt** copies every SVG file of a set, so it brings back the files of an icon removed since, and a test set adopts with icons missing.
   - **Proposal**: adopt the files of the icons of `aicon-studio.json` only, and say which icons the set lacks before copying.
 - **First Release**:
-  - **Context**: the package is `"private": true` and runs from a clone, linked by a `file:` dev dependency where another repository uses it.
-  - **Proposal**: drop `"private"`, add `impl/releasing.md` with the publishing steps, publish `@cynthion/aicon-studio`, and document `npx`, the dev dependency by version and the global install in [`user/getting-started.md`](../user/getting-started.md). Then switch the consumers from `file:` to the version.
+  - **Context**: the package is unpublished and runs from a clone, linked by a `file:` dev dependency where another repository uses it. The steps are in [`impl/releasing.md`](releasing.md).
+  - **Proposal**: run `/ai-publish-release`, document `npx`, the dev dependency by version and the global install in [`user/getting-started.md`](../user/getting-started.md), then switch the consumers from `file:` to the version.
 - **Prove The Folder Picker On Windows And Linux**:
   - **Context**: `POST /api/pick-folder` runs a PowerShell `FolderBrowserDialog` on Windows and `zenity` on Linux, written from their documentation and never run, see **HTTP API** in [`tech/pipeline.md`](../tech/pipeline.md#http-api).
   - **Proposal**: run **Browse…** on each platform, fix what differs, and record the proof.

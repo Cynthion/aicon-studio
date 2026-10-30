@@ -1,16 +1,10 @@
 import { inject } from '@angular/core';
 import type { Routes } from '@angular/router';
+import type { Unsaved } from './api/studio.model';
 import { IconsComponent } from './icons/icons.component';
 import { SetsComponent } from './sets/sets.component';
 import { StylesComponent } from './styles/styles.component';
 import { ConfirmService } from './ui/confirm/confirm.service';
-
-/** A view holding edits that are not saved yet. */
-export interface Unsaved {
-  /** What is unsaved, such as `2 subjects`, or nothing. */
-  unsaved(): string | undefined;
-  discard(): void;
-}
 
 /** Leaving a view with unsaved edits asks first. */
 const leave = async (view: Unsaved): Promise<boolean> => {

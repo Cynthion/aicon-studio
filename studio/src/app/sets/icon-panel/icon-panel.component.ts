@@ -11,8 +11,9 @@ import {
 import { Router } from '@angular/router';
 import type { Icon } from '../../api/api.model';
 import { ApiService } from '../../api/api.service';
-import { type Column, costLabel, fileUrl, isDrawn, messageOf, promptOf } from '../../api/studio.helpers';
+import { costLabel, fileUrl, isDrawn, messageOf, promptOf } from '../../api/studio.helpers';
 import { StudioService } from '../../api/studio.service';
+import type { Column } from '../../api/studio.model';
 import { PairComponent } from '../../ui/pair/pair.component';
 import { ToastService } from '../../ui/toast/toast.service';
 
@@ -50,7 +51,10 @@ export class IconPanelComponent {
   protected readonly isReference = computed(
     () => this.state().referencedIn[this.stem()]?.includes(this.column().id) ?? false
   );
-  protected readonly flips = computed(() => this.column().info?.flips[this.stem()] ?? []);
+  /** Equal by value, so a state read that leaves them as they are does not fetch the fill again. */
+  protected readonly flips = computed(() => this.column().info?.flips[this.stem()] ?? [], {
+    equal: (a, b) => a.join(' ') === b.join(' ')
+  });
   protected readonly subject = computed(() => {
     const icon = this.icon();
     return isDrawn(icon) ? icon.subject : undefined;

@@ -146,7 +146,7 @@ The server listens on the loopback interface only. Every answer is JSON; a faile
 | `PUT /api/icons`                 | Writes the icons in the `order` given, which names every stem once                                                                                              |
 | `PUT /api/references/<stem>`     | Copies the stem's outline of a column, `icons` or a set, as its reference                                                                                       |
 | `DELETE /api/references/<stem>`  | Removes the reference                                                                                                                                           |
-| `POST /api/runs`                 | Starts a run of known styles at a quality, of every drawn icon or of the drawn `stems` given; needs complete settings                                           |
+| `POST /api/runs`                 | Starts a run of known styles at a quality, of every drawn icon or of the drawn `stems` given, each once; needs complete settings                                |
 | `POST /api/stop`                 | Stops the running job: no further request starts or is tried again; a drawing whose request is answered is still written                                        |
 | `POST /api/redraw`               | Redraws stems of a set                                                                                                                                          |
 | `POST /api/describe`             | Writes a subject from a drawing with the describe model                                                                                                         |

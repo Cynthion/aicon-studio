@@ -33,6 +33,7 @@ const ANGLES = ['90', '180', '270'].map((value) => ({ value, label: `${value}°`
 @Component({
   selector: 'studio-add-icon-dialog',
   templateUrl: './add-icon-dialog.component.html',
+  styleUrl: './add-icon-dialog.component.scss',
   imports: [
     DialogComponent,
     FieldDecorator,

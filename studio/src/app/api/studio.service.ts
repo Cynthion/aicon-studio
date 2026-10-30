@@ -4,37 +4,7 @@ import { ToastService } from '../ui/toast/toast.service';
 import type { State } from './api.model';
 import { ApiService } from './api.service';
 import { folderName, messageOf } from './studio.helpers';
-
-/** What the page keeps per browser, in `localStorage['aicon-studio']`. */
-export interface Prefs {
-  size: number;
-  theme: 'light' | 'dark';
-  pair: 'side' | 'hover';
-  /** Hidden columns. */
-  hidden: string[];
-  /** The saved order of the set columns. */
-  order: string[];
-  /** The icons chosen for the last test run. */
-  runStems: string[];
-  /** Recently opened project folders, newest first. */
-  projects: string[];
-}
-
-/** `run` and `test-run` open the same dialog, preset to every icon or to chosen icons. */
-export type DialogName = 'settings' | 'project' | 'run' | 'test-run' | 'add-icon';
-
-/** The cell open in the icon panel. */
-export interface Selection {
-  column: string;
-  stem: string;
-}
-
-/** A style the Styles view opens, such as one started from the prompt of a set. */
-export interface StyleDraft {
-  name: string;
-  prompt: string;
-  isNew: boolean;
-}
+import type { DialogName, Prefs, Selection, StyleDraft } from './studio.model';
 
 const PREFS_KEY = 'aicon-studio';
 const RECENT = 8;
@@ -93,7 +63,7 @@ export class StudioService {
     });
   }
 
-  /** Reads the state again, and keeps reading it every two seconds while a job runs. */
+  /** Reads the state again, and keeps reading it every two seconds while a job runs, a failed read included. */
   async reload(): Promise<void> {
     clearTimeout(this.timer);
     try {
@@ -101,11 +71,11 @@ export class StudioService {
       this.state.set(state);
       this.remember(state.project);
       this.title.setTitle(`${folderName(state.project)} · Aicon Studio`);
-      if (state.job?.running) {
-        this.timer = setTimeout(() => void this.reload(), POLL_MS);
-      }
     } catch (e) {
       this.toasts.error(messageOf(e));
+    }
+    if (this.state()?.job?.running) {
+      this.timer = setTimeout(() => void this.reload(), POLL_MS);
     }
   }
 

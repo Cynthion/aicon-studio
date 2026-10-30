@@ -264,6 +264,12 @@ describe('icons', () => {
     expect(reply.status).toBe(400);
   });
 
+  it('refuses a stem that names a fill', async () => {
+    const reply = await api('POST', '/api/icons', { stem: 'home-filled', subject: 'a house' });
+
+    expect(reply.status).toBe(400);
+  });
+
   it('refuses an empty subject', async () => {
     const reply = await api('POST', '/api/icons', { stem: 'gear', subject: '  ' });
 

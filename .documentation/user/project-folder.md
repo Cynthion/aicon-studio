@@ -37,7 +37,7 @@ A repository keeps `aicon-studio.json`, `styles/` and `references/` under versio
 | `{ "stem", "subject" }`        | The drawn outline              | Its fill                    |
 | `{ "stem", "from", "rotate" }` | The outline of `from`, rotated | The fill of `from`, rotated |
 
-- **Stem**: the file name without `.svg`, in kebab case: letters, digits, dashes and underscores.
+- **Stem**: the file name without `.svg`, in kebab case: letters, digits, dashes and underscores. It does not end in `-filled`, which names a fill.
 - **Subject**: describes the symbol to draw, such as `a gear`, not the concept it stands for, so every style draws the same symbol. The studio edits subjects under **Icons**; **Write subject from this drawing** writes one that also describes the composition, see [Workflow](workflow.md).
 - **Rotation**: the four chevrons are one drawing, so they match. A rotation is referenced, flipped and redrawn through its `from` icon.
 - **In The Studio**: **Project** → **Create** writes this file with no icons and `./icons` as target. **Icons** adds, orders and removes entries and edits subjects, see [Workflow](workflow.md). A stem and the target are edited by hand in this file.

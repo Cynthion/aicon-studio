@@ -3,7 +3,8 @@
 <dialog
   #dialog
   [attr.aria-labelledby]="headlineId"
-  (click)="$event.target === dialog && close()"
+  (mousedown)="press($event)"
+  (click)="clickBackdrop($event)"
   (close)="closed.emit(dialog.returnValue)">
   <div class="body">
     <header>

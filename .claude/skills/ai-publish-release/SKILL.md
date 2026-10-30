@@ -1,0 +1,59 @@
+---
+name: ai-publish-release
+description: Release the studio. Draft the release notes, propose the version, then hand over the npm publish, the tag and the GitHub release and verify each. Use when main holds everything the release should contain.
+disable-model-invocation: true
+---
+
+# Publish A Release
+
+Drive one release of `@cynthion/aicon-studio`. The steps and their commands are in [`impl/releasing.md`](../../../.documentation/impl/releasing.md). This skill adds where to resume, what is handed over, and how the release notes are written.
+
+Template: [`.claude/skills/ai-publish-release/release.template.md`](release.template.md)
+
+## Prerequisite
+
+`gh` must be authenticated and `npm` logged in as an owner of the `@cynthion` scope. Run `gh auth status` and `npm whoami`; if either fails, ask for `gh auth login` or `npm login` and stop. Do not attempt to authenticate on anyone's behalf.
+
+## Handing Over
+
+**Publish**, **Tag** and **Release** change the registry or the remote, so this skill never runs them, whether or not a local deny rule would stop it. For each: show the command with the version filled in, stop, and once it is reported done run the verification step that follows it. Continue only when the verification passes.
+
+## Where To Resume
+
+Determine the state from what exists, report it, then continue from there. Every check can be repeated, so a release interrupted anywhere resumes in a fresh session. The notes file must exist before **Publish**; draft it when it does not.
+
+| State                                              | Next                                                            |
+| :------------------------------------------------- | :-------------------------------------------------------------- |
+| `version` is `0.0.0` or not above the last release | Draft the notes and propose the version, see below              |
+| `version` is new and not on the registry           | **Check** through **Publish**                                   |
+| On the registry, no tag on the remote              | **Verify The Registry**, then **Tag**                           |
+| Tag on the remote, no GitHub release               | **Release**                                                     |
+| GitHub release exists                              | Report the npm, tag and release links and remove the notes file |
+
+## Proposing The Version
+
+When `version` is not above the last release, the registry's `latest`, the bump is still to come. The notes come first, because their sections are what the **Version** table of [`impl/releasing.md`](../../../.documentation/impl/releasing.md) reads:
+
+1. Collect the pull request bodies since the last release, and the diff of `.documentation/user/` and `package.json` against its tag. For the first release, collect the `user/` documents as they are.
+2. Draft the notes from the template and show them.
+3. Propose the version from the table: the bump, the entries it rests on and whether **Early Adoption** applied. Ask for confirmation. Write the notes to `.release/v<x.y.z>.md`.
+4. On a `feature/*` branch, run `npm version <x.y.z> --no-git-tag-version` and hand over to `/ai-create-pr`. On `main`, stop: the bump reaches `main` through a pull request.
+
+## Writing The Notes
+
+- **For Users**: What changes for whoever runs the new version against a project. Not a diff walkthrough, not the mechanism, nothing about the repository.
+- **Sections Carry Weight**: `## Breaking Changes` and `## New` decide the bump, so each change goes into the section that names what it is. A change of the page without a contract change gets a section named after what moved, for example `## Layout Change`, and is not breaking.
+- **Fixes As Rows**: One row per fix, `Where` and `Before`, stated as a user saw it.
+- **Links To The Guides**: A `user/` document is linked at the tag, `https://github.com/Cynthion/aicon-studio/blob/v<x.y.z>/.documentation/user/<slug>.md`.
+- **Install**: The exact version, then `Same Node range as <last>.` or the new range from `engines`.
+- **Not A Change**: The version pull request, a dependency update that leaves the Node range, repository tooling.
+- **Reviewed Before Handed Over**: Show the draft. Edits land in the file, and the file is what **Release** publishes.
+- **Style**: Follow [`.documentation/impl/documentation.md`](../../../.documentation/impl/documentation.md). Run `npx prettier --write --ignore-path /dev/null` on the file so its tables align: Prettier reads `.gitignore`, which lists `.release/`, and skips the file without the flag.
+
+## Rules
+
+- **`main` Only**: **Check** through **Release** run on a clean, up-to-date `main` with green CI at its head. Report anything else and stop rather than fixing it.
+- **Never Publish, Tag, Push Or Create**: Ask, even where no deny rule stops you. A deny rule is a guardrail, not an obstacle to route around.
+- **Verify, Then Continue**: A `202` from npm is not a publish; the registry showing the version with the local shasum is. A tag exists once `git ls-remote` lists it, a release once the API returns it.
+- **Stop On A Low Version**: A version below the bump the **Version** table requires is never published. Report it; the bump goes through a pull request.
+- **Report Plainly**: Each command and its output, failures included.

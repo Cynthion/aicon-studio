@@ -2,19 +2,22 @@ import type { Icon, Job, SetEntry, State } from './api.model';
 import {
   cellState,
   chosenStems,
-  type Column,
   columns,
-  costOf,
+  costLabel,
+  fileUrl,
   flowSteps,
   ICONS_COLUMN,
+  jobText,
   missingStems,
   nextStep,
+  promptOf,
   reorder,
   runSummary,
   stemError,
   styleNameError,
   stylePromptError
 } from './studio.helpers';
+import type { Column } from './studio.model';
 
 const ICONS: Icon[] = [
   { stem: 'home', subject: 'a house' },
@@ -128,20 +131,76 @@ describe('cellState', () => {
   });
 });
 
-describe('costOf', () => {
-  it('has no cost without both prices', () => {
+describe('costLabel', () => {
+  const priced = (patch: Partial<State> = {}): State =>
+    state({ settings: { ...state().settings, pricePlain: 0.04, priceReferenced: 0.08 }, ...patch });
+
+  it('is empty without both prices', () => {
     const s = state({ settings: { ...state().settings, pricePlain: 0.04 } });
 
-    expect(costOf(s, ['home'])).toBeNull();
+    expect(costLabel(s, ['home'])).toBe('');
   });
 
   it('prices referenced stems at the referenced price', () => {
-    const s = state({
-      settings: { ...state().settings, pricePlain: 0.04, priceReferenced: 0.06 },
-      references: { home: 1 }
-    });
+    expect(costLabel(priced({ references: { home: 1 } }), ['home', 'search'])).toBe(' (≈ $0.12)');
+  });
 
-    expect(costOf(s, ['home', 'search'])).toBeCloseTo(0.1);
+  it('shows three decimals under ten cents', () => {
+    expect(costLabel(priced(), ['search'])).toBe(' (≈ $0.040)');
+  });
+});
+
+describe('fileUrl', () => {
+  it('versions a file by its modification time', () => {
+    expect(fileUrl(column(state(), A), 'home')).toBe('/files/sets/2026-10-26-1200/soft/home.svg?v=1');
+  });
+
+  it('has no URL for a file the column lacks', () => {
+    expect(fileUrl(column(state(), A), 'gear')).toBeUndefined();
+  });
+});
+
+describe('promptOf', () => {
+  it('replaces every {subject} with the subject of the icon', () => {
+    expect(promptOf(state(), '# Soft\n{subject}, {subject}', 'search')).toBe(
+      '# Soft\na magnifying glass, a magnifying glass'
+    );
+  });
+
+  it('appends the reference prompt for a referenced stem', () => {
+    expect(promptOf(state({ references: { home: 1 } }), '# Soft\n{subject}', 'home')).toBe(
+      '# Soft\na house\n\nKeep it.'
+    );
+  });
+});
+
+describe('jobText', () => {
+  it('counts the drawings of a running job and its failures', () => {
+    expect(jobText(job({ done: 3, total: 8, failed: ['a/home: x'] }))).toBe('Drawing 3/8 · 1 failed');
+  });
+
+  it('names the drawings a stopping job waits for', () => {
+    expect([
+      jobText(job({ stopped: true, drawing: ['a/home', 'a/search'] })),
+      jobText(job({ stopped: true, drawing: ['a/home'] }))
+    ]).toEqual(['Stopping: 2 drawings finish', 'Stopping: 1 drawing finishes']);
+  });
+
+  it('counts what a stopped job drew and left undrawn', () => {
+    expect(jobText(job({ running: false, stopped: true, done: 5, total: 8, failed: ['a/home: x'] }))).toBe(
+      'run stopped: 4 drawn, 3 not drawn'
+    );
+  });
+
+  it('shows the error that ended a job', () => {
+    expect(jobText(job({ running: false, error: 'boom' }))).toBe('run stopped: boom');
+  });
+
+  it('counts what a finished job drew and its failures', () => {
+    expect([
+      jobText(job({ running: false, done: 8, total: 8, failed: ['a/home: x'] })),
+      jobText(job({ kind: 'redraw', running: false, done: 2, total: 2 }))
+    ]).toEqual(['run done: 7 drawn, 1 failed', 'redraw done: 2 drawn']);
   });
 });
 
@@ -238,5 +297,9 @@ describe('stemError', () => {
       expect.any(String),
       undefined
     ]);
+  });
+
+  it('refuses a stem that names a fill', () => {
+    expect(stemError('home-filled', ICONS)).toEqual(expect.any(String));
   });
 });

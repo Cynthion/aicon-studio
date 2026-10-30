@@ -42,11 +42,11 @@ Without `<slug>`, the script asks for one.
 
 ## Run In Parallel
 
-| Process | Port       | Second Instance                                                                                                    |
-| :------ | :--------- | :----------------------------------------------------------------------------------------------------------------- |
-| Studio  | `54400`    | `npm run build`, then `node src/cli.ts example --port 54401`                                                       |
-| Page    | `54410`    | `ng serve` on `54411` over the second studio, see **Own Studio** in [`impl/testing.md`](testing.md#visual-testing) |
-| Specs   | Free ports | None needed: every spec listens on a free port, see [`impl/testing.md`](testing.md#writing-a-spec)                 |
+| Process | Port       | Second Instance                                                                                                                              |
+| :------ | :--------- | :------------------------------------------------------------------------------------------------------------------------------------------- |
+| Studio  | `54400`    | `npm run build`, then `node src/cli.ts <copy of example> --port 54401`, see **Own Studio** in [`impl/testing.md`](testing.md#visual-testing) |
+| Page    | `54410`    | `ng serve` on `54411` over the second studio, see **Own Studio** in [`impl/testing.md`](testing.md#visual-testing)                           |
+| Specs   | Free ports | None needed: every spec listens on a free port, see [`impl/testing.md`](testing.md#writing-a-spec)                                           |
 
 The `playwright` MCP server is a client of whatever studio is listening, so a session in a worktree opens the port of its own studio.
 

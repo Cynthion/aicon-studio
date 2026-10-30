@@ -146,6 +146,8 @@
       <button
         type="button"
         class="primary"
+        [disabled]="studio.busy()"
+        [title]="studio.busy() ? 'Wait for the drawing job' : ''"
         (click)="studio.dialog.set('add-icon')">
         Add icon
       </button>

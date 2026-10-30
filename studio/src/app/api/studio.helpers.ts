@@ -1,28 +1,8 @@
-import type { Drawn, Icon, Job, SetInfo, State, Style } from './api.model';
+import type { Drawn, Icon, Job, State, Style } from './api.model';
+import type { CellState, Column, FlowStep } from './studio.model';
 
 /** The id of the column of the current icons; every other column is a set, `<run>/<style>`. */
 export const ICONS_COLUMN = 'icons';
-
-/** A column of the Sets view: the current icons, or one set. */
-export interface Column {
-  id: string;
-  title: string;
-  sub: string;
-  /** The URL its files are served under. */
-  base: string;
-  /** File name without `.svg` -> modification time. */
-  files: Record<string, number>;
-  failed: string[];
-  info?: SetInfo;
-}
-
-export type CellState = '' | 'drawing' | 'failed' | 'pending' | 'not drawn';
-
-export interface FlowStep {
-  key: 'settings' | 'icons' | 'styles' | 'run';
-  label: string;
-  done: boolean;
-}
 
 export const isDrawn = (icon: Icon): icon is Drawn => 'subject' in icon;
 
@@ -78,7 +58,7 @@ export const cellState = (column: Column, icon: Icon, job: Job | undefined): Cel
 };
 
 /** The estimated cost of drawing the stems, or null without both prices. */
-export const costOf = (state: State, stems: readonly string[]): number | null => {
+const costOf = (state: State, stems: readonly string[]): number | null => {
   const { pricePlain, priceReferenced } = state.settings;
   if (pricePlain === undefined || priceReferenced === undefined) {
     return null;
@@ -114,10 +94,6 @@ export const stylePromptError = (prompt: string): string | undefined => {
   return prompt.includes('{subject}') ? undefined : 'A prompt needs {subject}';
 };
 
-/** Focuses the menu button of an item, `Actions for <name>`, such as after a move took its row out of the DOM. */
-export const focusMenu = (name: string): void =>
-  document.querySelector<HTMLElement>(`studio-ui-item-menu button[aria-label="Actions for ${name}"]`)?.focus();
-
 /** The last segment of a folder path, the name the page shows for a project. */
 export const folderName = (dir: string): string => dir.split(/[\\/]/).filter(Boolean).pop() ?? dir;
 
@@ -146,7 +122,7 @@ export const promptOf = (state: State, template: string, stem: string): string =
 export const jobText = (job: Job): string => {
   const failed = job.failed.length;
   if (job.running && job.stopped) {
-    return `Stopping: ${job.drawing.length} drawing${job.drawing.length === 1 ? '' : 's'} finish`;
+    return `Stopping: ${job.drawing.length} ${job.drawing.length === 1 ? 'drawing finishes' : 'drawings finish'}`;
   }
   if (job.running) {
     return `Drawing ${job.done}/${job.total}${failed ? ` · ${failed} failed` : ''}`;
@@ -191,6 +167,9 @@ export const chosenStems = (state: State, remembered: readonly string[]): string
 export const stemError = (stem: string, icons: readonly Icon[]): string | undefined => {
   if (!STEM.test(stem)) {
     return 'Letters, digits, dashes and underscores; it names the files';
+  }
+  if (stem.endsWith('-filled')) {
+    return 'A stem ending in -filled names the fill of another icon';
   }
   return icons.some((icon) => icon.stem === stem) ? `An icon ${stem} exists already` : undefined;
 };

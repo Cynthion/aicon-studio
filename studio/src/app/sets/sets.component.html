@@ -132,7 +132,7 @@
                     type="button"
                     class="cell"
                     [class.selected]="isSelected(column, icon.stem)"
-                    [attr.aria-label]="icon.stem + ' in ' + column.title + (reference ? ', the reference' : '')"
+                    [attr.aria-label]="icon.stem + ' in ' + column.id + (reference ? ', the reference' : '')"
                     (click)="studio.selected.set({ column: column.id, stem: icon.stem })">
                     <studio-ui-pair
                       [outline]="fileUrl(column, icon.stem)"

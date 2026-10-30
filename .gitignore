@@ -30,4 +30,5 @@ example/runs/
 .claude/settings.local.json
 .research/
 .plan/
+.release/
 .playwright-mcp/

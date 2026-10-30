@@ -284,6 +284,19 @@ describe('project', () => {
     expect(switched.status).toBe(409);
   });
 
+  it('refuses to create a project while a job runs', async () => {
+    stub.delayMs = 1500;
+    ({ project } = makeProject({ icons: HOME_ONLY, targetFiles: [] }));
+    const server = createServer(project, makeSettingsFile(settings));
+    const port = await listen(server);
+    await request(port, 'POST', '/api/runs', { body: RUN });
+    const created = await request(port, 'POST', '/api/project', { body: { dir: path.join(makeProject().dir, 'new') } });
+    await settled(port);
+    await close(server);
+
+    expect(created.status).toBe(409);
+  });
+
   it('forgets the job of the previous project', async () => {
     ({ project } = makeProject({ icons: HOME_ONLY, targetFiles: [] }));
     const server = createServer(project, makeSettingsFile(settings));
@@ -361,6 +374,14 @@ describe('test runs', () => {
     expect(replies.map((r) => r.status)).toEqual([400, 400]);
   });
 
+  it('refuses a choice that names an icon twice', async () => {
+    const studio = await serve(ICONS);
+    const reply = await request(studio.port, 'POST', '/api/runs', { body: { ...RUN, stems: ['home', 'home'] } });
+    await studio.done();
+
+    expect(reply.status).toBe(400);
+  });
+
   it('refuses an empty choice', async () => {
     const studio = await serve(ICONS);
     const reply = await request(studio.port, 'POST', '/api/runs', { body: { ...RUN, stems: [] } });
@@ -402,6 +423,19 @@ describe('stop', () => {
     );
   });
 
+  it('counts only the finished drawings as done', async () => {
+    stub.delayMs = 1000;
+    const studio = await serve(SIX_HOUSES);
+    await request(studio.port, 'POST', '/api/runs', { body: RUN });
+    await until(() => generations() === 4);
+    await request(studio.port, 'POST', '/api/stop');
+    await settled(studio.port);
+    const job = (await request(studio.port, 'GET', '/api/state')).json['job'] as Record<string, unknown>;
+    await studio.done();
+
+    expect([job['done'], job['total']]).toEqual([4, 6]);
+  });
+
   it('makes no retry after a stop and lists nothing stopped as failed', async () => {
     stub.answers.push({ status: 500, body: { error: { message: 'busy' } } });
     const studio = await serve(HOME_ONLY);
@@ -424,13 +458,17 @@ describe('stop', () => {
 });
 
 describe('icons', () => {
-  it('refuses to add while a job runs', async () => {
+  it('refuses to add, remove or reorder while a job runs', async () => {
     stub.delayMs = 1500;
     const studio = await serve(HOME_ONLY);
     await request(studio.port, 'POST', '/api/runs', { body: { styles: ['soft'], quality: 'medium' } });
-    const added = await request(studio.port, 'POST', '/api/icons', { body: { stem: 'gear', subject: 'a gear' } });
+    const replies = [
+      await request(studio.port, 'POST', '/api/icons', { body: { stem: 'gear', subject: 'a gear' } }),
+      await request(studio.port, 'DELETE', '/api/icons/home'),
+      await request(studio.port, 'PUT', '/api/icons', { body: { order: ['home'] } })
+    ];
     await studio.done();
 
-    expect(added.status).toBe(409);
+    expect(replies.map((r) => r.status)).toEqual([409, 409, 409]);
   });
 });

@@ -270,8 +270,11 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
           .map((icon) => icon.stem);
         check(
           stems === undefined ||
-            (Array.isArray(stems) && stems.length && stems.every((stem) => drawn.includes(stem as string))),
-          'choose drawn icons of aicon-studio.json'
+            (Array.isArray(stems) &&
+              stems.length &&
+              new Set(stems).size === stems.length &&
+              stems.every((stem) => drawn.includes(stem as string))),
+          'choose drawn icons of aicon-studio.json, each once'
         );
         const stored = settings('imageModel');
         begin('run', (j) => startRun(project, stored, styles as string[], quality as string, j, stems as string[]));
@@ -319,6 +322,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
         busy();
         const icons = readConfig(project).icons;
         check(typeof stem === 'string' && NAME.test(stem), 'a stem takes letters, digits, dashes and underscores');
+        check(!(stem as string).endsWith('-filled'), 'a stem ending in -filled names the fill of another icon');
         check(!icons.some((icon) => icon.stem === stem), `${String(stem)} exists`);
         if (from === undefined) {
           check(typeof subject === 'string' && subject.trim(), 'a subject must not be empty');

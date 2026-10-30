@@ -4,19 +4,19 @@ import { Router } from '@angular/router';
 import type { Icon } from '../api/api.model';
 import {
   cellState,
-  type Column,
   columns,
   costLabel,
   fileUrl,
-  focusMenu,
   ICONS_COLUMN,
   isDrawn,
   missingStems,
   reorder
 } from '../api/studio.helpers';
 import { StudioService } from '../api/studio.service';
+import type { Column } from '../api/studio.model';
 import { ConfirmService } from '../ui/confirm/confirm.service';
 import { ItemMenuComponent, type MenuEntry } from '../ui/item-menu/item-menu.component';
+import { focusMenu } from '../ui/item-menu/item-menu.helpers';
 import { PairComponent } from '../ui/pair/pair.component';
 import { IconPanelComponent } from './icon-panel/icon-panel.component';
 

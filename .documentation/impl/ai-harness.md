@@ -44,12 +44,13 @@ Scoping uses `paths` frontmatter. A rule without `paths` loads in every session,
 
 Only the manual tooling needs instruction. The automatic skills and the agents are selected from their `description`, so documenting when to trigger them would duplicate the frontmatter.
 
-| Invoke          | When                           | Produces                             |
-| :-------------- | :----------------------------- | :----------------------------------- |
-| `/ai-drive-sdd` | Development begins on a branch | `.research/` then `.plan/` artifacts |
-| `/ai-create-pr` | The Definition of Done is met  | One pull request                     |
+| Invoke                | When                           | Produces                                           |
+| :-------------------- | :----------------------------- | :------------------------------------------------- |
+| `/ai-drive-sdd`       | Development begins on a branch | `.research/` then `.plan/` artifacts               |
+| `/ai-create-pr`       | The Definition of Done is met  | One pull request                                   |
+| `/ai-publish-release` | `main` holds the release       | Release notes, npm package, tag and GitHub release |
 
-Each of these has an outward-facing effect, so each is marked `disable-model-invocation` and runs only when invoked. An agent does not decide to open a pull request.
+Each of these has an outward-facing effect, so each is marked `disable-model-invocation` and runs only when invoked. An agent does not decide to open a pull request or to publish a release.
 
 MCP servers are not invoked. Their tools are model-invoked, so there is nothing manual about them beyond the configuration below.
 
@@ -78,6 +79,7 @@ An agent body stands alone and never assumes who invoked it.
 | `ai-write-documentation` |    Auto    | Inherit | Apply the documentation guidelines                           |
 | `ai-drive-sdd`           |   Manual   | Inherit | Own the SDD templates and drive the phases                   |
 | `ai-create-pr`           |   Manual   |   Low   | Open a pull request from a template                          |
+| `ai-publish-release`     |   Manual   | Inherit | Drive a release, hand over publish, tag and GitHub release   |
 
 `effort` overrides the session's reasoning effort for the skill's own turn only, resuming the session value on the next prompt. `Low` marks mechanical, template-driven skills; `High` marks skills whose entire purpose is finding gaps or defects.
 
@@ -101,6 +103,7 @@ flowchart LR
   Docs --> Review[Review]
   Review --> PR[Pull Request]
   PR --> Main[Merge To Main]
+  Main --> Release[Release]
 ```
 
 | Step            | Input                 | Output                                                                         | Tooling                                             |
@@ -112,6 +115,7 @@ flowchart LR
 | Documentation   | Source code           | Documentation                                                                  | `ai-write-documentation`                            |
 | Review          | Diff                  | Findings against [`impl/definition-of-done.md`](definition-of-done.md)         | `ai-review`, `ai-review-change`                     |
 | Pull Request    | Verified change       | Pull request                                                                   | `/ai-create-pr`                                     |
+| Release         | Merge to `main`       | npm package, tag, GitHub release, see [`impl/releasing.md`](releasing.md)      | `/ai-publish-release`                               |
 
 `.research/` and `.plan/` are untracked and excluded from the Markdown gate. Implementation progress is appended to the plan file rather than written to a third artifact, so a work item has exactly two files. Templates live in `.claude/skills/ai-drive-sdd/`.
 
@@ -147,6 +151,7 @@ The recommended baseline denies what must stay manual. `deny` outranks `allow`, 
 - **Match On The Command String**: a `Bash` rule matches what is typed, not what runs.
 - **Allow Rules Are Personal**: anything not allowed prompts. The allow list is a guardrail against routine mistakes, not a sandbox.
 - **Push Stays Manual**: `ai-create-pr` drafts and shows the request, then stops and asks for the push, whatever the allow list says.
+- **Releases**: `ai-publish-release` never publishes, tags, pushes or creates the release. It hands each over, then verifies the registry, the remote tag and the release before continuing.
 
 ---
 

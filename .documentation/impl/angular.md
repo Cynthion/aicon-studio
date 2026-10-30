@@ -14,7 +14,7 @@ Conventions for the Angular studio page: where a component lives, what it is cal
 - **Forms**: ngx-formidable fields on Signal Forms. A rule the server also checks lives in `studio.helpers.ts`, so the form and its spec share it.
 - **Menus**: `@angular/aria` Menu, through `studio-ui-item-menu`. Dialogs are the native `<dialog>`, through `studio-ui-dialog`.
 - **Routing**: hash routes, `#/icons`, `#/styles`, `#/sets`, so the server serves `/` alone.
-- **Development**: `npm start` serves the studio over `example` on `54400` and the page with hot reload on `http://localhost:54410`, which `studio/proxy.conf.json` forwards `/api` and `/files` to the studio. `Ctrl+C` stops both.
+- **Development**: `npm start` serves the studio over `example` on `54400` and the page with hot reload on `http://localhost:54410`, which `studio/proxy.conf.json` forwards `/api` and `/files` to the studio. `Ctrl+C` stops both. The script needs a POSIX shell; on Windows, `node src/cli.ts example` and `ng serve` run in two terminals.
 
 ---
 

@@ -4,7 +4,6 @@
   "description": "Draws candidate icon sets with an image model, compares them and adopts one into your project.",
   "license": "GPL-2.0-only",
   "author": "Christian Lüthold",
-  "private": true,
   "type": "module",
   "repository": {
     "type": "git",
@@ -19,6 +18,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "start": "node src/cli.ts example & ng serve",
     "build": "tsc -p tsconfig.build.json && ng build",

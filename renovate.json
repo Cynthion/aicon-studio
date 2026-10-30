@@ -28,6 +28,11 @@
       "groupName": "Vitest"
     },
     {
+      "matchPackageNames": ["@angular/**", "angular-eslint", "@cynthion/ngx-formidable", "ngx-mask"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "Angular"
+    },
+    {
       "description": "Playwright's Chromium rasterizes every fill, so a bump can change the golden fixtures, see .documentation/impl/testing.md",
       "matchPackageNames": ["playwright"],
       "groupName": "Playwright"

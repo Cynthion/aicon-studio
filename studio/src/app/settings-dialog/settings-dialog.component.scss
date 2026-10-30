@@ -1,0 +1,25 @@
+.estimates {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+p {
+  margin: 0;
+}
+.prices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.reveal {
+  margin-right: 4px;
+  border-color: transparent;
+  font-size: 12px;
+}

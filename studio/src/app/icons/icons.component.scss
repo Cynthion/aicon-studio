@@ -1,0 +1,76 @@
+:host {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.wrap {
+  min-height: 0;
+  overflow: auto;
+}
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+th,
+td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+}
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--card);
+}
+th small {
+  display: block;
+  font-weight: 400;
+}
+.subject {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  min-width: 360px;
+}
+textarea {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+.edit {
+  display: grid;
+  gap: 4px;
+}
+.ic {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background: currentColor;
+  mask: var(--src) center / contain no-repeat;
+}
+.spacer {
+  flex: 1;
+}
+.drag-handle.fixed {
+  cursor: default;
+  opacity: 0.3;
+}
+code {
+  white-space: nowrap;
+}

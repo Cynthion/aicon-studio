@@ -1,0 +1,21 @@
+.stems {
+  max-height: 240px;
+  overflow: auto;
+}
+.clear {
+  justify-self: start;
+}
+.footer {
+  position: sticky;
+  bottom: 0;
+  padding-top: 8px;
+  background: var(--card);
+}
+.estimate {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+}

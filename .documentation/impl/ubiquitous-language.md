@@ -19,6 +19,8 @@ One name per concept, in code, on the page and in the documentation. Check a new
 | The style file with `{subject}` replaced, as sent to the model                             | **prompt**                          | "instruction", "template"                         |
 | `low`, `medium` or `high`                                                                  | **quality**                         | "resolution", "size", "level"                     |
 | One drawing of every icon in every chosen style                                            | **run**                             | "batch", "generation"                             |
+| A run of chosen icons only, to judge a style first                                         | **test run**                        | "partial run", "sample run", "preview"            |
+| Ending a job early, keeping what is drawn                                                  | **stop**                            | "cancel", "abort"                                 |
 | The folder a run writes per style, `runs/<run>/<style>/`                                   | **set**                             | "result", "candidate", "column" for the set       |
 | A column of the Sets view: the current icons, or one set                                   | **column**                          | "set" for the column of the current icons         |
 | The PNG the model answers for one request                                                  | **image**                           | "picture", "render"                               |

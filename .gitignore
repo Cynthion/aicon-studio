@@ -1,6 +1,9 @@
 # Compiled output
 dist
 
+# Angular CLI cache
+.angular
+
 # Node
 node_modules
 npm-debug.log
@@ -27,4 +30,5 @@ example/runs/
 .claude/settings.local.json
 .research/
 .plan/
+.release/
 .playwright-mcp/

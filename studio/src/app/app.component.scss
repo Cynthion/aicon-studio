@@ -1,0 +1,96 @@
+// the shell fills the viewport and never scrolls; a view scrolls its own table, so nothing chains to the page
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+// one row; the tabs stretch to its bottom edge, so the active one underlines on the border
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+}
+h1 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.project {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  max-width: 260px;
+  border-color: transparent;
+}
+.project .muted {
+  font-size: 12px;
+}
+.folder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+nav {
+  display: flex;
+  align-self: stretch;
+}
+nav a {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: -1px;
+  padding: 0 12px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  text-decoration: none;
+}
+nav a:hover {
+  color: var(--fg);
+  border-bottom-color: var(--line);
+}
+nav a.active {
+  color: var(--fg);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+.count {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+// the next setup step
+.dot {
+  display: inline-block;
+  vertical-align: middle;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.spacer {
+  flex: 1;
+}
+.split {
+  display: inline-flex;
+}
+.split > button:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.split > button:last-child {
+  margin-left: -1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 16px;
+}

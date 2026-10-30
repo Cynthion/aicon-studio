@@ -39,6 +39,8 @@ export interface Job {
   failed: string[];
   drawing: string[];
   sets: string[];
+  /** Set by a stop: no new drawing starts, and no request is tried again. */
+  stopped: boolean;
 }
 interface Path {
   d: string;
@@ -65,7 +67,10 @@ export const REFERENCE_PROMPT =
   'The attached image is a drawing of this subject. Keep its composition, pose and parts, and redraw it in the style described above.';
 const INCOMPLETE = 'Enter the base URL, API key and models in Settings';
 
-export const newJob = (): Job => ({ total: 0, done: 0, failed: [], drawing: [], sets: [] });
+export const newJob = (): Job => ({ total: 0, done: 0, failed: [], drawing: [], sets: [], stopped: false });
+
+/** Thrown instead of a request once the job is stopped; the icon is neither drawn nor failed. */
+class Stopped extends Error {}
 export const readStyles = (project: Project): Style[] =>
   fs.existsSync(project.styles)
     ? fs
@@ -130,6 +135,7 @@ const requestImage = async (
   settings: Settings,
   prompt: string,
   { imageModel, quality }: { imageModel: string; quality: string },
+  job: Pick<Job, 'stopped'>,
   reference?: Buffer
 ): Promise<Buffer> => {
   const { base, key } = credentials(settings, 'imageModel');
@@ -159,6 +165,9 @@ const requestImage = async (
   let wait = 0;
   for (let attempt = 1; attempt <= 5; attempt++) {
     await sleep(wait);
+    if (job.stopped) {
+      throw new Stopped();
+    }
     wait = attempt * 5000;
     let res: Response;
     try {
@@ -435,6 +444,16 @@ const rotated = (file: string, degrees: number): string => {
   return markup.replace('<path', `<path transform="rotate(${degrees} ${round(x + side / 2)} ${round(y + side / 2)})"`);
 };
 
+/** Both files of a rotation in a set, from the outline and fill of its `from` icon; nothing while the set has no outline of it. */
+export const writeRotation = (project: Project, set: string, rotation: Rotated): void => {
+  const file = (s: string): string => path.join(setDir(project, set), `${s}.svg`);
+  if (!fs.existsSync(file(rotation.from))) {
+    return;
+  }
+  fs.writeFileSync(file(rotation.stem), rotated(file(rotation.from), rotation.rotate));
+  fs.writeFileSync(file(`${rotation.stem}-filled`), rotated(file(`${rotation.from}-filled`), rotation.rotate));
+};
+
 /** <stem>-filled.svg of a drawn stem and both files of every rotation of it, from <stem>.svg and the set's flips. */
 const derive = async (
   project: Project,
@@ -450,9 +469,8 @@ const derive = async (
     readSet(project, set).flips[stem] ?? []
   );
   fs.writeFileSync(file(`${stem}-filled`), markup);
-  for (const r of config.icons.filter((icon): icon is Rotated => !isDrawn(icon) && icon.from === stem)) {
-    fs.writeFileSync(file(r.stem), rotated(file(stem), r.rotate));
-    fs.writeFileSync(file(`${r.stem}-filled`), rotated(file(`${stem}-filled`), r.rotate));
+  for (const rotation of config.icons.filter((icon): icon is Rotated => !isDrawn(icon) && icon.from === stem)) {
+    writeRotation(project, set, rotation);
   }
   return ratio;
 };
@@ -470,7 +488,7 @@ const draw = async (
   job.total += work.length;
   const queue = [...work];
   const worker = async (): Promise<void> => {
-    for (let item = queue.shift(); item; item = queue.shift()) {
+    for (let item = queue.shift(); item && !job.stopped; item = queue.shift()) {
       const { set, stem } = item;
       const name = `${set}/${stem}`;
       job.drawing.push(name);
@@ -485,9 +503,10 @@ const draw = async (
               settings,
               `${prompt}\n\n${REFERENCE_PROMPT}`,
               info,
+              job,
               await rasterize(browser, fs.readFileSync(reference, 'utf8'), 820)
             )
-          : await requestImage(settings, prompt, info);
+          : await requestImage(settings, prompt, info, job);
         fs.writeFileSync(path.join(setDir(project, set), `${stem}.svg`), svg(toPath(await trace(png))));
         // a new drawing: the flips of the old one point at other regions
         updateSet(project, set, (i) => ({
@@ -498,14 +517,20 @@ const draw = async (
         }));
         const ratio = await derive(project, browser, set, stem, config);
         console.log(`drew ${name}${ratio < UNFILLED ? ', its fill enclosed next to nothing: open contour?' : ''}`);
+        job.done++;
       } catch (e) {
+        // a stopped icon is neither drawn nor failed, so it is not done
+        if (e instanceof Stopped) {
+          console.log(`stopped ${name}`);
+          continue;
+        }
         job.failed.push(`${name}: ${(e as Error).message}`);
         if (!fs.existsSync(path.join(setDir(project, set), `${stem}.svg`))) {
           updateSet(project, set, (i) => ({ ...i, failed: [...new Set([...i.failed, stem])] }));
         }
         console.error(`failed ${name}: ${(e as Error).message}`);
-      } finally {
         job.done++;
+      } finally {
         job.drawing = job.drawing.filter((n) => n !== name);
       }
     }
@@ -514,13 +539,14 @@ const draw = async (
   await browser.close();
 };
 
-/** A new run: one set per style, every drawn icon of aicon-studio.json, the referenced ones from their reference. */
+/** A new run: one set per style, every drawn icon of aicon-studio.json or the chosen `stems`, the referenced ones from their reference. */
 export const startRun = async (
   project: Project,
   settings: Settings,
   styles: string[],
   quality: string,
-  job: Job
+  job: Job,
+  stems?: string[]
 ): Promise<void> => {
   const config = readConfig(project);
   const chosen = readStyles(project).filter((style) => styles.includes(style.name));
@@ -533,7 +559,10 @@ export const startRun = async (
   if (taken) {
     throw new Error(`${taken} exists, wait a minute and run again`);
   }
-  const drawn = config.icons.filter(isDrawn);
+  const drawn = config.icons.filter(isDrawn).filter((icon) => !stems || stems.includes(icon.stem));
+  if (stems && (!stems.length || drawn.length !== stems.length)) {
+    throw new Error(`choose drawn stems of aicon-studio.json, got: ${stems.join(', ') || 'none'}`);
+  }
   chosen.forEach((style, i) => {
     fs.mkdirSync(setDir(project, sets[i]), { recursive: true });
     const info: SetInfo = {

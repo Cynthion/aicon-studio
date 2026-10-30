@@ -1,0 +1,26 @@
+// the padding sits on the body, so a click on the dialog element itself is a click on the backdrop
+dialog {
+  width: min(520px, 92vw);
+  max-height: 90vh;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--fg);
+}
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.35);
+}
+.body {
+  padding: 16px 20px 20px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+header button {
+  border-color: transparent;
+}

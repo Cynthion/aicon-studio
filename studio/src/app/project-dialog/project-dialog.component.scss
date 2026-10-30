@@ -1,0 +1,30 @@
+h3 {
+  margin: 12px 0 4px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.recent {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.recent li {
+  display: flex;
+  gap: 4px;
+}
+.dir {
+  flex: 1;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.folder {
+  display: flex;
+  gap: 6px;
+  align-items: end;
+}
+.folder formidable-field-decorator {
+  flex: 1;
+}

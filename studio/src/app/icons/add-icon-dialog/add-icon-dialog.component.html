@@ -1,0 +1,60 @@
+<studio-ui-dialog
+  #dialog
+  headline="Add icon"
+  (closed)="studio.dialog.set(undefined)">
+  <form
+    class="fields"
+    [formRoot]="form">
+    <formidable-field-decorator>
+      <formidable-radio-group-field
+        [formField]="form.kind"
+        [options]="kinds" />
+      <div formidableFieldLabel>Kind</div>
+    </formidable-field-decorator>
+    <formidable-field-decorator>
+      <formidable-input-field [formField]="form.stem" />
+      <div formidableFieldLabel>Stem</div>
+      <div formidableFieldHint>The file name without .svg, such as gear or chevron-up.</div>
+    </formidable-field-decorator>
+    @if (rotation()) {
+      <formidable-field-decorator>
+        <formidable-select-field
+          [formField]="form.from"
+          [options]="fromOptions()" />
+        <div formidableFieldLabel>Rotation of</div>
+      </formidable-field-decorator>
+      <formidable-field-decorator>
+        <formidable-radio-group-field
+          [formField]="form.rotate"
+          [options]="angles" />
+        <div formidableFieldLabel>Angle, clockwise</div>
+      </formidable-field-decorator>
+    } @else {
+      <formidable-field-decorator>
+        <formidable-textarea-field [formField]="form.subject" />
+        <div formidableFieldLabel>Subject</div>
+        <div formidableFieldHint>The symbol to draw, such as a gear, not the concept it stands for.</div>
+      </formidable-field-decorator>
+    }
+    @if (error(); as error) {
+      <p
+        class="error"
+        role="alert">
+        {{ error }}
+      </p>
+    }
+    <div class="buttons">
+      <button
+        type="button"
+        (click)="dialog.close()">
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="primary"
+        [disabled]="form().submitting()">
+        Add icon
+      </button>
+    </div>
+  </form>
+</studio-ui-dialog>

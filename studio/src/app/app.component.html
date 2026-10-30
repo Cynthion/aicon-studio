@@ -1,0 +1,94 @@
+<header class="top">
+  <h1>Aicon Studio</h1>
+  @if (studio.state(); as state) {
+    <button
+      type="button"
+      class="project"
+      [title]="state.project"
+      (click)="studio.dialog.set('project')">
+      <span class="muted">Project</span>
+      <span class="folder">{{ folder() }}</span>
+      <span aria-hidden="true">▾</span>
+    </button>
+    <nav aria-label="Views">
+      @for (tab of tabs(); track tab.path) {
+        <a
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          [routerLink]="tab.path">
+          {{ tab.label }} <span class="count">{{ tab.count }}</span>
+          @if (next() === tab.step) {
+            <span
+              class="dot"
+              title="Next setup step"
+              aria-hidden="true"></span>
+            <span class="visually-hidden">next setup step</span>
+          }
+        </a>
+      }
+    </nav>
+    <span class="spacer"></span>
+    <studio-job-status />
+    <span class="split">
+      <button
+        type="button"
+        class="primary"
+        [disabled]="studio.busy()"
+        [title]="studio.busy() ? 'Wait for the drawing job' : ''"
+        (click)="studio.dialog.set('run')">
+        New run
+      </button>
+      <button
+        type="button"
+        [disabled]="studio.busy()"
+        [title]="studio.busy() ? 'Wait for the drawing job' : 'Draw chosen icons first, to judge a style'"
+        (click)="studio.dialog.set('test-run')">
+        New test run
+      </button>
+    </span>
+    <span class="group">
+      <button
+        type="button"
+        class="icon"
+        aria-label="Dark theme"
+        title="Dark theme"
+        [attr.aria-pressed]="studio.prefs().theme === 'dark'"
+        (click)="studio.updatePrefs({ theme: studio.prefs().theme === 'dark' ? 'light' : 'dark' })">
+        <span aria-hidden="true">☾</span>
+      </button>
+      <button
+        type="button"
+        (click)="studio.dialog.set('settings')">
+        Settings
+        @if (next() === 'settings') {
+          <span
+            class="dot"
+            title="Next setup step"
+            aria-hidden="true"></span>
+          <span class="visually-hidden">next setup step</span>
+        }
+      </button>
+    </span>
+  }
+</header>
+<main>
+  @if (studio.state()) {
+    <router-outlet />
+  }
+</main>
+@switch (studio.dialog()) {
+  @case ('settings') {
+    <studio-settings-dialog />
+  }
+  @case ('project') {
+    <studio-project-dialog />
+  }
+  @case ('run') {
+    <studio-run-dialog />
+  }
+  @case ('test-run') {
+    <studio-run-dialog />
+  }
+}
+<studio-ui-confirm />
+<studio-ui-toast />

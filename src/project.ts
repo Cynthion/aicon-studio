@@ -49,6 +49,15 @@ export const readConfig = (project: Pick<Project, 'file'>): Config => {
 export const updateConfig = (project: Project, change: (config: Config) => Config): void =>
   fs.writeFileSync(project.file, `${JSON.stringify(change(readConfig(project)), null, 2)}\n`);
 
+/** Writes an empty aicon-studio.json into `folder`, created when missing, and answers the project. */
+export const createProject = (folder: string): Project => {
+  const dir = path.resolve(folder);
+  const config: Config = { target: './icons', quality: 'medium', icons: [] };
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, CONFIG_FILE), `${JSON.stringify(config, null, 2)}\n`);
+  return resolveProject(dir);
+};
+
 /** The project in a folder: its aicon-studio.json, the fixed folders beside it and the target it names. */
 export const resolveProject = (folder: string): Project => {
   const dir = path.resolve(folder);

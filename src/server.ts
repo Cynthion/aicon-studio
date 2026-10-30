@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   describe,
   type Job,
@@ -15,16 +16,35 @@ import {
   setDir,
   sets,
   startRun,
-  updateSet
+  updateSet,
+  writeRotation
 } from './pipeline.ts';
-import { isDrawn, readConfig, resolveProject, updateConfig, type Project } from './project.ts';
+import {
+  CONFIG_FILE,
+  createProject,
+  isDrawn,
+  readConfig,
+  resolveProject,
+  updateConfig,
+  type Project,
+  type Rotated
+} from './project.ts';
 import { publicSettings, readSettings, type Settings, writeSettings } from './settings.ts';
 
 // The studio server: a local page to compare icon sets, choose references, flip fill regions, edit subjects and styles, and
-// start runs or redraws. It serves studio.html and a small JSON API over pipeline.ts, on the loopback interface only.
+// start runs or redraws. It serves the built studio page and a small JSON API over pipeline.ts, on the loopback interface only.
 // Reference: .documentation/tech/pipeline.md.
 
-const PAGE = new URL('./studio.html', import.meta.url);
+/** The built studio page, written by `npm run build`; `../dist/` resolves the same from `src/` and from `dist/`. */
+const PAGE = fileURLToPath(new URL('../dist/studio/browser/', import.meta.url));
+/** A file of the page folder: one segment with an extension, so never a path out of it. */
+const PAGE_FILE = /^[\w-]+(\.[\w-]+)+$/;
+const TYPES: Partial<Record<string, string>> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.ico': 'image/x-icon'
+};
 const NAME = /^[\w-]+$/;
 const INCOMPLETE = 'Enter the base URL, API key and models in Settings';
 
@@ -120,8 +140,8 @@ const versions = (dir: string): Record<string, number> =>
 type Body = Record<string, unknown>;
 type Route = [string, RegExp, (match: string[], body: Body) => unknown];
 
-/** The studio server over a project: the page, its files and the JSON API. Not listening yet. */
-export const createServer = (initial: Project, settingsFile: string): http.Server => {
+/** The studio server over a project: the page in `page`, its files and the JSON API. Not listening yet. */
+export const createServer = (initial: Project, settingsFile: string, page = PAGE): http.Server => {
   let project = initial;
   let job: (Job & { kind: string; running: boolean; error?: string }) | undefined;
 
@@ -203,6 +223,17 @@ export const createServer = (initial: Project, settingsFile: string): http.Serve
         job = undefined;
       }
     ],
+    [
+      'POST',
+      /^\/api\/project$/,
+      (_, { dir }) => {
+        busy();
+        check(typeof dir === 'string' && path.isAbsolute(dir), 'a project folder is an absolute path');
+        check(!fs.existsSync(path.join(dir as string, CONFIG_FILE)), `already a project: ${dir as string}`);
+        project = createProject(dir as string);
+        job = undefined;
+      }
+    ],
     ['POST', /^\/api\/pick-folder$/, async () => ({ dir: (await pickFolder(project.dir)) ?? null })],
     [
       'PUT',
@@ -225,7 +256,7 @@ export const createServer = (initial: Project, settingsFile: string): http.Serve
     [
       'POST',
       /^\/api\/runs$/,
-      (_, { styles, quality }) => {
+      (_, { styles, quality, stems }) => {
         check(Array.isArray(styles) && styles.length, 'choose at least one style');
         const known = readStyles(project).map((style) => style.name);
         check(
@@ -233,8 +264,28 @@ export const createServer = (initial: Project, settingsFile: string): http.Serve
           'choose known styles'
         );
         check(['low', 'medium', 'high'].includes(quality as string), 'quality is low, medium or high');
+        // a test run: only the chosen drawn icons, and their rotations
+        const drawn = readConfig(project)
+          .icons.filter(isDrawn)
+          .map((icon) => icon.stem);
+        check(
+          stems === undefined ||
+            (Array.isArray(stems) &&
+              stems.length &&
+              new Set(stems).size === stems.length &&
+              stems.every((stem) => drawn.includes(stem as string))),
+          'choose drawn icons of aicon-studio.json, each once'
+        );
         const stored = settings('imageModel');
-        begin('run', (j) => startRun(project, stored, styles as string[], quality as string, j));
+        begin('run', (j) => startRun(project, stored, styles as string[], quality as string, j, stems as string[]));
+      }
+    ],
+    [
+      'POST',
+      /^\/api\/stop$/,
+      () => {
+        check(job?.running, 'no drawing job is running');
+        job!.stopped = true;
       }
     ],
     [
@@ -261,6 +312,69 @@ export const createServer = (initial: Project, settingsFile: string): http.Serve
           icons: config.icons.map((icon) =>
             icon.stem === stem ? { ...icon, subject: (subject as string).trim() } : icon
           )
+        }));
+      }
+    ],
+    [
+      'POST',
+      /^\/api\/icons$/,
+      (_, { stem, subject, from, rotate }) => {
+        busy();
+        const icons = readConfig(project).icons;
+        check(typeof stem === 'string' && NAME.test(stem), 'a stem takes letters, digits, dashes and underscores');
+        check(!(stem as string).endsWith('-filled'), 'a stem ending in -filled names the fill of another icon');
+        check(!icons.some((icon) => icon.stem === stem), `${String(stem)} exists`);
+        if (from === undefined) {
+          check(typeof subject === 'string' && subject.trim(), 'a subject must not be empty');
+          updateConfig(project, (config) => ({
+            ...config,
+            icons: [...config.icons, { stem: stem as string, subject: (subject as string).trim() }]
+          }));
+          return;
+        }
+        check(
+          icons.some((icon) => icon.stem === from && isDrawn(icon)),
+          'a rotation turns a drawn icon of aicon-studio.json'
+        );
+        check([90, 180, 270].includes(rotate as number), 'a rotation turns by 90, 180 or 270 degrees');
+        const rotation: Rotated = { stem: stem as string, from: from as string, rotate: rotate as number };
+        updateConfig(project, (config) => ({ ...config, icons: [...config.icons, rotation] }));
+        sets(project).forEach((set) => writeRotation(project, set, rotation));
+      }
+    ],
+    [
+      'DELETE',
+      /^\/api\/icons\/([\w-]+)$/,
+      ([stem]) => {
+        busy();
+        const icons = readConfig(project).icons;
+        check(
+          icons.some((icon) => icon.stem === stem),
+          `unknown icon: ${stem}`
+        );
+        const rotations = icons.filter((icon) => !isDrawn(icon) && icon.from === stem).map((icon) => icon.stem);
+        check(!rotations.length, `remove the rotations of ${stem} first: ${rotations.join(', ')}`);
+        updateConfig(project, (config) => ({ ...config, icons: config.icons.filter((icon) => icon.stem !== stem) }));
+        // the sets and the target keep their files: a set records a run, the target what was adopted
+        fs.rmSync(path.join(project.references, `${stem}.svg`), { force: true });
+      }
+    ],
+    [
+      'PUT',
+      /^\/api\/icons$/,
+      (_, { order }) => {
+        busy();
+        const icons = readConfig(project).icons;
+        check(
+          Array.isArray(order) &&
+            order.length === icons.length &&
+            new Set(order).size === order.length &&
+            icons.every((icon) => order.includes(icon.stem)),
+          'the order names every icon once'
+        );
+        updateConfig(project, (config) => ({
+          ...config,
+          icons: (order as string[]).map((stem) => config.icons.find((icon) => icon.stem === stem)!)
         }));
       }
     ],
@@ -403,8 +517,11 @@ export const createServer = (initial: Project, settingsFile: string): http.Serve
         );
       }
       const url = new URL(req.url ?? '/', `http://${host}`).pathname;
-      if (req.method === 'GET' && url === '/') {
-        return send(200, 'text/html; charset=utf-8', fs.readFileSync(PAGE));
+      if (req.method === 'GET' && (url === '/' || PAGE_FILE.test(url.slice(1)))) {
+        const file = path.join(page, url === '/' ? 'index.html' : url.slice(1));
+        return fs.existsSync(file)
+          ? send(200, TYPES[path.extname(file)] ?? 'application/octet-stream', fs.readFileSync(file))
+          : send(404, 'text/plain', 'not found');
       }
       if (req.method === 'GET' && url.startsWith('/files/')) {
         const svg = file(url);

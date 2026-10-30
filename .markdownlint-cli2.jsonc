@@ -4,5 +4,13 @@
   // Relative links and heading anchors are checked by markdownlint-rule-relative-links.
   "globs": ["**/*.md"],
   "customRules": ["markdownlint-rule-relative-links"],
-  "ignores": ["**/node_modules/**", ".claude/worktrees/**", ".plan/**", ".research/**", "dist/**", "example/runs/**"]
+  "ignores": [
+    "**/node_modules/**",
+    ".claude/worktrees/**",
+    ".plan/**",
+    ".release/**",
+    ".research/**",
+    "dist/**",
+    "example/runs/**"
+  ]
 }

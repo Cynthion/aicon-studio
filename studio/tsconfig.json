@@ -1,0 +1,28 @@
+/* The studio page. The editor and the lint read this file; tsconfig.app.json and tsconfig.spec.json narrow it. */
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    // implies `moduleResolution: bundler` and `esModuleInterop`
+    "module": "preserve",
+    "target": "ES2022",
+    "importHelpers": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "types": ["vitest/globals"]
+  },
+  "angularCompilerOptions": {
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictStandalone": true,
+    "strictTemplates": true
+  },
+  "include": ["src/**/*.ts"]
+}

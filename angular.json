@@ -1,0 +1,83 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": {
+    "analytics": false,
+    "packageManager": "npm"
+  },
+  "newProjectRoot": "studio",
+  "projects": {
+    "studio": {
+      "projectType": "application",
+      "root": "studio",
+      "sourceRoot": "studio/src",
+      "prefix": "studio",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "outputPath": {
+              "base": "dist/studio"
+            },
+            "index": "studio/src/index.html",
+            "browser": "studio/src/main.ts",
+            "tsConfig": "studio/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "styles": ["studio/src/styles.scss"],
+            "allowedCommonJsDependencies": ["pikaday"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "900kB",
+                  "maximumError": "1.5MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "8kB",
+                  "maximumError": "16kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "port": 54410,
+            "proxyConfig": "studio/proxy.conf.json"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "studio:build:production"
+            },
+            "development": {
+              "buildTarget": "studio:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "studio/tsconfig.spec.json"
+          }
+        }
+      }
+    }
+  }
+}

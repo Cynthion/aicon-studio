@@ -22,14 +22,14 @@ The `ai-review` agent carries the method and what to look for. This skill adds t
 
 Run only what the diff touches. All commands run from the repository root.
 
-| Touched                                    | Command                                                      |
-| :----------------------------------------- | :----------------------------------------------------------- |
-| Any file                                   | `npm run prettier:check`                                     |
-| Any `.ts`                                  | `npm run lint`                                               |
-| Any `src/*.ts`                             | `npm run build`                                              |
-| Any `.ts`                                  | `npx vitest run test/<module>.spec.ts`, then `npm test`      |
-| Any Markdown                               | `npm run docs:lint`                                          |
-| `src/studio.html` or user-visible behavior | Visual proof on the served studio, `node src/cli.ts example` |
+| Touched                            | Command                                                                                                                                  |
+| :--------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
+| Any file                           | `npm run prettier:check`                                                                                                                 |
+| Any `.ts`                          | `npm run lint`                                                                                                                           |
+| Any `src/*.ts`                     | `npm run build`                                                                                                                          |
+| Any `.ts`                          | `npx vitest run test/<module>.spec.ts` or `npx ng test --no-watch`, then `npm test`                                                      |
+| Any Markdown                       | `npm run docs:lint`                                                                                                                      |
+| `studio/` or user-visible behavior | Visual proof on the served studio, see **Visual Testing** in [`impl/testing.md`](../../../.documentation/impl/testing.md#visual-testing) |
 
 Run the narrowest scope first. Widen once the narrow scope passes.
 

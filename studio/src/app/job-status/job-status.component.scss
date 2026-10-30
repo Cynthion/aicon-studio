@@ -1,0 +1,26 @@
+:host {
+  display: inline-flex;
+  gap: 4px;
+}
+.chip.running {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.chip.failed {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+[popover] {
+  inset: 56px 16px auto auto;
+  margin: 0;
+  max-width: 480px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 8px 12px;
+  color: var(--fg);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.15);
+}
+ul {
+  margin: 0;
+  padding-left: 18px;
+}

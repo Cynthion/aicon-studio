@@ -1,0 +1,31 @@
+@if (job(); as job) {
+  <button
+    type="button"
+    class="chip"
+    popovertarget="job-list"
+    [class.running]="job.running"
+    [class.failed]="!job.running && (job.failed.length || job.error)">
+    {{ text() }}
+  </button>
+  @if (canStop()) {
+    <button
+      type="button"
+      class="danger"
+      title="No new drawing starts; the drawings in flight finish and are kept"
+      (click)="stop()">
+      Stop
+    </button>
+  }
+  <div
+    id="job-list"
+    class="card"
+    popover>
+    <ul>
+      @for (line of lines(); track $index) {
+        <li>{{ line }}</li>
+      } @empty {
+        <li>Nothing to show</li>
+      }
+    </ul>
+  </div>
+}

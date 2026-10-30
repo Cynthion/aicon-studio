@@ -1,0 +1,26 @@
+.live {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9;
+  max-width: 90vw;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--fg);
+  color: var(--bg);
+}
+.toast.error {
+  background: var(--danger);
+  color: var(--card);
+}
+.toast button {
+  background: none;
+  border-color: transparent;
+  color: inherit;
+}

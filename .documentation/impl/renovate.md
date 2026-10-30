@@ -45,6 +45,7 @@ Renovate opens every dependency pull request. Of GitHub's Dependabot features on
 | `ESLint (major)`             | `eslint`, `@eslint/js`, `typescript-eslint`                                                                                |
 | `Prettier (major)`           | `prettier`                                                                                                                 |
 | `Vitest (major)`             | `vitest`                                                                                                                   |
+| `Angular (major)`            | `@angular/*`, `angular-eslint`, `@cynthion/ngx-formidable`, `ngx-mask`: they move to a new Angular major together          |
 | `GitHub Actions (major)`     | Every action in `.github/workflows/`                                                                                       |
 | One per package              | Any other major, `node` in `.nvmrc` and `.tool-versions` included                                                          |
 

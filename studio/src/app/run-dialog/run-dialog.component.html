@@ -1,0 +1,101 @@
+<studio-ui-dialog
+  #dialog
+  [headline]="testRun() ? 'New test run' : 'New run'"
+  (closed)="studio.dialog.set(undefined)">
+  @if (setup(); as setup) {
+    <p>{{ setup.text }}</p>
+    <div class="buttons">
+      <button
+        type="button"
+        (click)="dialog.close()">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="primary"
+        (click)="followSetup()">
+        {{ setup.action }}
+      </button>
+    </div>
+  } @else {
+    <p class="hint">Every chosen icon is drawn once per chosen style, each style into its own set. Referenced icons keep the composition of their reference.</p>
+    <form
+      class="fields"
+      [formRoot]="form">
+      <formidable-field-decorator>
+        <formidable-checkbox-group-field
+          [formField]="form.styles"
+          [options]="styleOptions()" />
+        <div formidableFieldLabel>Styles</div>
+      </formidable-field-decorator>
+      <formidable-field-decorator>
+        <formidable-radio-group-field
+          [formField]="form.icons"
+          [options]="iconChoices()" />
+        <div formidableFieldLabel>Icons</div>
+        <div formidableFieldHint>A test run draws a few icons first, to judge a style before all are paid for.</div>
+      </formidable-field-decorator>
+      @if (testRun()) {
+        <formidable-field-decorator class="stems">
+          <formidable-checkbox-group-field
+            [formField]="form.stems"
+            [options]="stemOptions()" />
+          <div formidableFieldLabel>Chosen icons</div>
+          <div formidableFieldHint>Rotations follow their icon. Complete set in the column menu draws the rest later.</div>
+        </formidable-field-decorator>
+        @if (model().stems.length) {
+          <button
+            type="button"
+            class="clear"
+            (click)="clearStems()">
+            Clear the choice
+          </button>
+        }
+      }
+      <formidable-field-decorator>
+        <formidable-radio-group-field
+          [formField]="form.quality"
+          [options]="qualities" />
+        <div formidableFieldLabel>Quality</div>
+      </formidable-field-decorator>
+      <div class="footer">
+        <div
+          class="estimate"
+          aria-live="polite">
+          <span>{{ summary() }}</span>
+          @if (estimate(); as estimate) {
+            <b>Estimated cost {{ estimate.cost }}</b>
+            <small class="hint">{{ estimate.breakdown }}. The prices in Settings apply to every quality.</small>
+          } @else if (canStart()) {
+            <small class="hint">No cost estimate: it needs both prices in Settings.</small>
+            <button
+              type="button"
+              (click)="openSettings()">
+              Open Settings
+            </button>
+          }
+        </div>
+        @if (error(); as error) {
+          <p
+            class="error"
+            role="alert">
+            {{ error }}
+          </p>
+        }
+        <div class="buttons">
+          <button
+            type="button"
+            (click)="dialog.close()">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="primary"
+            [disabled]="!canStart() || form().submitting()">
+            {{ testRun() ? 'Start test run' : 'Start run' }}
+          </button>
+        </div>
+      </div>
+    </form>
+  }
+</studio-ui-dialog>

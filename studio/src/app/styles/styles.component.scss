@@ -1,0 +1,31 @@
+:host {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+nav {
+  display: grid;
+  gap: 4px;
+  width: 200px;
+}
+nav button {
+  text-align: left;
+}
+.editor {
+  flex: 1;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+.prompt {
+  --formidable-textarea-min-height: 18rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+.spacer {
+  flex: 1;
+}

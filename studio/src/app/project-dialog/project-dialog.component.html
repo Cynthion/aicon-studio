@@ -1,0 +1,70 @@
+<studio-ui-dialog
+  #dialog
+  headline="Project"
+  (closed)="studio.dialog.set(undefined)">
+  <p class="hint">The folder that holds aicon-studio.json. Open switches every view to it, Create writes an empty one there first; the settings stay.</p>
+  @if (recent().length) {
+    <h3>Recent</h3>
+    <ul class="recent">
+      @for (dir of recent(); track dir) {
+        <li>
+          <button
+            type="button"
+            class="dir"
+            (click)="open(dir)">
+            {{ dir }}
+          </button>
+          <button
+            type="button"
+            class="icon danger"
+            [attr.aria-label]="'Forget ' + dir"
+            (click)="studio.forget(dir)">
+            ✕
+          </button>
+        </li>
+      }
+    </ul>
+  }
+  <form
+    class="fields"
+    [formRoot]="form">
+    <div class="folder">
+      <formidable-field-decorator>
+        <formidable-input-field [formField]="form.dir" />
+        <div formidableFieldLabel>Folder</div>
+      </formidable-field-decorator>
+      <button
+        type="button"
+        [disabled]="browsing()"
+        (click)="browse()">
+        Browse…
+      </button>
+    </div>
+    @if (error(); as error) {
+      <p
+        class="error"
+        role="alert">
+        {{ error }}
+      </p>
+    }
+    <div class="buttons">
+      <button
+        type="button"
+        (click)="dialog.close()">
+        Cancel
+      </button>
+      <button
+        type="button"
+        [disabled]="!model().dir.trim() || form().submitting()"
+        (click)="create(model().dir.trim())">
+        Create
+      </button>
+      <button
+        type="submit"
+        class="primary"
+        [disabled]="form().submitting()">
+        Open
+      </button>
+    </div>
+  </form>
+</studio-ui-dialog>

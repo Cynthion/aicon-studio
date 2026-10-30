@@ -1,6 +1,23 @@
 # Angular
 
-Conventions for the Angular studio page: where a component lives, what it is called, how it declares its API and how it notifies its view. The page is planned, see **Angular UI** in [`impl/backlog.md`](backlog.md). Its workspace path is `<TODO>`, settled with that item; until then [`.claude/rules/angular.md`](../../.claude/rules/angular.md) matches by file suffix.
+Conventions for the Angular studio page: where a component lives, what it is called, how it declares its API and how it notifies its view. The page lives in `studio/`, one Angular application in the repository's own `package.json` and `angular.json`; `ng build` writes it to `dist/studio/browser`, which `src/server.ts` serves.
+
+## Workspace
+
+| Path                     | Holds                                                                                 |
+| :----------------------- | :------------------------------------------------------------------------------------ |
+| `studio/src/app/api/`    | The HTTP API: its types, the service that calls it, the page's state and pure helpers |
+| `studio/src/app/ui/`     | Reusable components: dialog, confirm, toast, item menu, pair                          |
+| `studio/src/app/<view>/` | One folder per view, `icons`, `styles`, `sets`, with the components only it uses      |
+| `studio/src/app/<name>/` | The shell's own components and dialogs: job status, settings, project, run            |
+
+- **Forms**: ngx-formidable fields on Signal Forms. A rule the server also checks lives in `studio.helpers.ts`, so the form and its spec share it.
+- **Menus**: `@angular/aria` Menu, through `studio-ui-item-menu`. Dialogs are the native `<dialog>`, through `studio-ui-dialog`.
+- **Guidance**: the page itself shows how to use the studio. A control or field that needs an explanation carries a hint beside it, and a state that blocks the work names what is missing and offers the control that leads there, never a dead end.
+- **Routing**: hash routes, `#/icons`, `#/styles`, `#/sets`, so the server serves `/` alone.
+- **Development**: `npm start` serves the studio over `example` on `54400` and the page with hot reload on `http://localhost:54410`, which `studio/proxy.conf.json` forwards `/api` and `/files` to the studio. `Ctrl+C` stops both. The script needs a POSIX shell; on Windows, `node src/cli.ts example` and `ng serve` run in two terminals.
+
+---
 
 ## Placement And Selectors
 

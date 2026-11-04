@@ -157,3 +157,8 @@
 @if (studio.dialog() === 'add-icon') {
   <studio-add-icon-dialog />
 }
+@if (renaming(); as icon) {
+  <studio-rename-icon-dialog
+    [icon]="icon"
+    (closed)="renaming.set(undefined)" />
+}

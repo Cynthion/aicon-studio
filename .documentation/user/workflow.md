@@ -2,7 +2,7 @@
 
 From the first run to an adopted set. The studio has three views, in the order of the work and switched by the tabs in the top bar, each with its count.
 
-- **Icons**: every icon with its current file, stem, subject and reference. Icons are added, ordered and removed in this view, and the subject is edited in it, because it applies to the icon in every style. The stem names the files and is not renamed in the studio.
+- **Icons**: every icon with its current file, stem, subject and reference. Icons are added, renamed, ordered and removed in this view, and the subject is edited in it, because it applies to the icon in every style. The stem names the files, so a rename renames them too.
 - **Styles**: the drawing prompts.
 - **Sets**: every icon as a row, the current icons of the target and every set as columns. Each cell shows the outline beside its fill, or the fill on hover. While no icon panel is open, a line above the table names what a cell and the ⋯ of a column do. Size, the fill and the visible columns are switches above the table; **Filter icons** filters the rows of the **Icons** and **Sets** view and counts the matches.
 
@@ -25,15 +25,18 @@ Every view uses the same controls, so an action is found where the others of its
 
 **Add icon** in the **Icons** view opens a dialog that adds an icon at the end of the list.
 
-| Field                | Holds                                                                                 |
-| :------------------- | :------------------------------------------------------------------------------------ |
-| **Kind**             | **Drawn from a subject**, or **Rotation of a drawn icon**                             |
-| **Stem**             | The file name without `.svg`, such as `gear` or `chevron-up`                          |
-| **Subject**          | The symbol to draw, such as `a gear`, not the concept it stands for; for a drawn icon |
-| **Rotation of**      | The drawn icon to rotate; for a rotation                                              |
-| **Angle, clockwise** | **90°**, **180°** or **270°**; for a rotation                                         |
+| Field                | Holds                                                                                    |
+| :------------------- | :--------------------------------------------------------------------------------------- |
+| **Kind**             | **Drawn from a subject**, **Rotation of a drawn icon**, or **Several, pasted as a list** |
+| **Stem**             | The file name without `.svg`, such as `gear` or `chevron-up`                             |
+| **Subject**          | The symbol to draw, such as `a gear`, not the concept it stands for; for a drawn icon    |
+| **Rotation of**      | The drawn icon to rotate; for a rotation                                                 |
+| **Angle, clockwise** | **90°**, **180°** or **270°**; for a rotation                                            |
+| **Icons**            | One `stem: subject` per line, such as `gear: a gear`; for several                        |
 
-A drawn icon is drawn by the next run, or into a set by **Complete set**. A rotation is written at once into every set that holds its icon. **Remove icon…** in the row menu removes the icon and its reference, after asking; the drawings in the sets and the target stay. An icon that rotations come from is removed after them. The order of the icons is the order of the rows, in every view and in `aicon-studio.json`.
+A drawn icon is drawn by the next run, or into a set by **Complete set**. A rotation is written at once into every set that holds its icon. A pasted list adds every line as a drawn icon, or none: a line without exactly one colon, with a stem that exists or with an empty subject is named by its number. **Remove icon…** in the row menu removes the icon and its reference, after asking; the drawings in the sets and the target stay. An icon that rotations come from is removed after them. The order of the icons is the order of the rows, in every view and in `aicon-studio.json`.
+
+**Rename icon…** in the row menu renames the stem in `aicon-studio.json` and in the `from` of its rotations, its reference, and its outline and fill in every set and the target, so its drawings, flips and failures stay with it. The dialog names what it renames, and warns when files of the new stem, left by a removed icon, are overwritten. An app that uses the files of the target needs the new name too.
 
 ---
 
@@ -218,7 +221,8 @@ The **Styles** view lists every style on the left and edits the chosen one. **Ne
 | Remove reference                 | Icon panel, or Icons view    | Drops the reference                                                                           |
 | Write subject from this drawing  | Icon panel                   | The describe model writes a subject; the Icons view shows it unsaved, beside the saved one    |
 | Save subject                     | Icons view, or `⌘Enter`      | Writes the subject to `aicon-studio.json`; the next run or redraw of the icon draws from it   |
-| Add icon                         | Icons view                   | Adds a drawn icon or a rotation to `aicon-studio.json`                                        |
+| Add icon                         | Icons view                   | Adds a drawn icon, a rotation, or a pasted list of drawn icons to `aicon-studio.json`         |
+| Rename icon…                     | Row menu                     | Renames the stem, its reference and its files in every set and the target                     |
 | Move up, down, to top, bottom    | Row menu, or the handle ⠿    | Orders the icons in `aicon-studio.json`                                                       |
 | Remove icon…                     | Row menu                     | Removes the icon and its reference, after asking                                              |
 | Flip                             | Icon panel, **Filled**       | A click switches the region under it between filled and white, and derives the fill           |

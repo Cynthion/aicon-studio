@@ -11,11 +11,21 @@
         [options]="kinds" />
       <div formidableFieldLabel>Kind</div>
     </formidable-field-decorator>
-    <formidable-field-decorator>
-      <formidable-input-field [formField]="form.stem" />
-      <div formidableFieldLabel>Stem</div>
-      <div formidableFieldHint>The file name without .svg, such as gear or chevron-up.</div>
-    </formidable-field-decorator>
+    @if (several()) {
+      <formidable-field-decorator>
+        <formidable-textarea-field
+          [formField]="form.list"
+          [enableAutosize]="true" />
+        <div formidableFieldLabel>Icons</div>
+        <div formidableFieldHint>One stem: subject per line, such as gear: a gear. Rotations are added one by one.</div>
+      </formidable-field-decorator>
+    } @else {
+      <formidable-field-decorator>
+        <formidable-input-field [formField]="form.stem" />
+        <div formidableFieldLabel>Stem</div>
+        <div formidableFieldHint>The file name without .svg, such as gear or chevron-up.</div>
+      </formidable-field-decorator>
+    }
     @if (rotation()) {
       <formidable-field-decorator>
         <formidable-select-field
@@ -29,7 +39,7 @@
           [options]="angles" />
         <div formidableFieldLabel>Angle, clockwise</div>
       </formidable-field-decorator>
-    } @else {
+    } @else if (!several()) {
       <formidable-field-decorator>
         <formidable-textarea-field [formField]="form.subject" />
         <div formidableFieldLabel>Subject</div>
@@ -53,7 +63,7 @@
         type="submit"
         class="primary"
         [disabled]="form().submitting()">
-        Add icon
+        {{ submitLabel() }}
       </button>
     </div>
   </form>

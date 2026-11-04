@@ -1,0 +1,38 @@
+<studio-ui-dialog
+  #dialog
+  [headline]="'Rename icon ' + icon().stem"
+  (closed)="closed.emit()">
+  <form
+    class="fields"
+    [formRoot]="form">
+    <formidable-field-decorator>
+      <formidable-input-field [formField]="form.stem" />
+      <div formidableFieldLabel>New stem</div>
+      <div formidableFieldHint>The file name without .svg; the files are renamed with it.</div>
+    </formidable-field-decorator>
+    <p class="hint">{{ effect() }}</p>
+    @if (overwrite(); as overwrite) {
+      <p class="error">{{ overwrite }}</p>
+    }
+    @if (error(); as error) {
+      <p
+        class="error"
+        role="alert">
+        {{ error }}
+      </p>
+    }
+    <div class="buttons">
+      <button
+        type="button"
+        (click)="dialog.close()">
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="primary"
+        [disabled]="form().submitting()">
+        Rename
+      </button>
+    </div>
+  </form>
+</studio-ui-dialog>

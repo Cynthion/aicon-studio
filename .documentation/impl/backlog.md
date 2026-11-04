@@ -13,9 +13,6 @@ The single source of truth for work items, in priority order; bugs come first. A
 - **Rasterize Without A Browser**:
   - **Context**: every fill and every reference image is rasterized by Playwright's Chromium, a browser install of about 150 MB that `npm ci` does not download, see [`user/getting-started.md`](../user/getting-started.md).
   - **Proposal**: replace it with `@resvg/resvg-js`, a native SVG rasterizer. Its anti-aliasing differs from Chromium's, so the fills change slightly; the golden fixtures in `test/fixtures/` are regenerated and the change needs its own visual proof on a drawn set, see [`impl/testing.md`](testing.md).
-- **Rename Icons In The UI**:
-  - **Context**: the Icons view adds, orders and removes icons, but a stem is renamed by editing `aicon-studio.json` by hand. A rename touches the entry, `references/<stem>.svg`, the `from` of its rotations, and the files of every set and the target.
-  - **Proposal**: a rename route beside `POST /api/icons` that decides what happens to the files of the sets and the target, and a **Rename** in the row menu.
 - **Adopt Leftovers**:
   - **Context**: **Adopt** copies every SVG file of a set, so it brings back the files of an icon removed since, and a test set adopts with icons missing.
   - **Proposal**: adopt the files of the icons of `aicon-studio.json` only, and say which icons the set lacks before copying.
@@ -31,9 +28,6 @@ The single source of truth for work items, in priority order; bugs come first. A
 - **Push The Job State**:
   - **Context**: the page reads `GET /api/state` every two seconds while a job runs, see **HTTP API** in [`tech/pipeline.md`](../tech/pipeline.md#http-api).
   - **Proposal**: server-sent events for the job, so a drawing shows the moment it is written.
-- **Edit The Config In The Studio**:
-  - **Context**: `aicon-studio.json` is edited one icon at a time, through **Add icon** and the subject fields of the Icons view, see [`user/workflow.md`](../user/workflow.md). A new project with many icons is slow to enter.
-  - **Proposal**: decide whether editing the file as text in the studio is worth it, such as to add many icons at the start, and build it if so.
 - **Start From Reference Images**:
   - **Context**: a reference comes from a drawing of a set or of the current icons, so a project without drawings starts from subjects alone, see [`user/workflow.md`](../user/workflow.md).
   - **Proposal**: decide whether an image from elsewhere, such as one found on the internet, can be added as the reference of an icon before any run, and build it if so.

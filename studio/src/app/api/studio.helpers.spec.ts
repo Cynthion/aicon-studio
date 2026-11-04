@@ -9,6 +9,7 @@ import {
   type FailedDrawing,
   failureGroups,
   failureList,
+  filesOf,
   fileUrl,
   flowSteps,
   ICONS_COLUMN,
@@ -17,6 +18,7 @@ import {
   missingStems,
   nextStep,
   notDrawnList,
+  parseIcons,
   priceError,
   promptOf,
   redoFlip,
@@ -473,6 +475,49 @@ describe('stemError', () => {
 
   it('refuses a stem that names a fill', () => {
     expect(stemError('home-filled', ICONS)).toEqual(expect.any(String));
+  });
+});
+
+describe('parseIcons', () => {
+  it('reads one stem: subject per line, trimmed, skipping blank lines', () => {
+    expect(parseIcons('gear: a gear\n\n bell :  a bell ', ICONS)).toEqual({
+      icons: [
+        { stem: 'gear', subject: 'a gear' },
+        { stem: 'bell', subject: 'a bell' }
+      ]
+    });
+  });
+
+  it('names a line with more than one colon', () => {
+    expect(parseIcons('clock: time: noon', ICONS).error).toBe('Line 1: Write stem: subject, with one colon');
+  });
+
+  it('names a line without a colon', () => {
+    expect(parseIcons('gear', ICONS).error).toBe('Line 1: Write stem: subject, with one colon');
+  });
+
+  it('names a line whose stem exists', () => {
+    expect(parseIcons('home: a house', ICONS).error).toBe('Line 1: An icon home exists already');
+  });
+
+  it('names a stem repeated in the list', () => {
+    expect(parseIcons('gear: a\ngear: b', ICONS).error).toBe('Line 2: An icon gear exists already');
+  });
+
+  it('names a line with an empty subject', () => {
+    expect(parseIcons('gear:', ICONS).error).toBe('Line 1: Describe the symbol to draw, such as a gear');
+  });
+
+  it('asks for a line when the text is empty', () => {
+    expect(parseIcons('  ', ICONS)).toEqual({ icons: [], error: 'Paste one stem: subject per line' });
+  });
+});
+
+describe('filesOf', () => {
+  it('names the columns that hold the outline or the fill of a stem', () => {
+    const s = state({ icons: { home: 1 }, sets: [set(B, ['home-filled']), set(A, ['homes'])] });
+
+    expect(filesOf(s, 'home').map((c) => c.id)).toEqual([ICONS_COLUMN, B]);
   });
 });
 

@@ -6,6 +6,8 @@ import {
   readSet,
   redraw,
   REFERENCE_PROMPT,
+  rephrase,
+  rephraseSubject,
   RUN_FILE,
   startRun,
   updateSet
@@ -31,6 +33,8 @@ import { startStub, type Stub } from './stub.ts';
 
 const HOME_ONLY = [{ stem: 'home', subject: 'a house' }];
 const HOME_PROMPT = SOFT_PROMPT.replaceAll('{subject}', 'a house');
+const REPHRASED = '# Rephrased\n\nDraw {subject} softly.';
+const BAD_REQUEST = { status: 400, body: { error: { code: 'invalid_prompt', message: 'bad' } } };
 
 let stub: Stub;
 let project: Project;
@@ -41,6 +45,16 @@ const run = async (styles = ['soft'], icons: (Drawn | Rotated)[] = HOME_ONLY): P
   const job = newJob();
   await startRun(project, settings, styles, 'medium', job);
   return job.sets[0];
+};
+const runBoth = async (): Promise<string[]> => {
+  ({ project } = makeProject({
+    icons: HOME_ONLY,
+    styles: { soft: SOFT_PROMPT, sharp: SHARP_PROMPT },
+    targetFiles: []
+  }));
+  const job = newJob();
+  await startRun(project, settings, ['soft', 'sharp'], 'medium', job);
+  return job.sets;
 };
 const setPath = (set: string, file: string): string => path.join(project.runs, ...set.split('/'), file);
 const generations = (): number => stub.requests.filter((r) => r.endpoint === 'generations').length;
@@ -90,6 +104,7 @@ describe('startRun', () => {
         { stem: 'chevron-right', subject: 'a chevron pointing right', referenced: false }
       ],
       failed: [],
+      failures: {},
       flips: {}
     });
   });
@@ -179,6 +194,13 @@ describe('startRun', () => {
     expect([generations(), fs.existsSync(setPath(set, 'home.svg'))]).toEqual([2, true]);
   });
 
+  it('retries every safety block, whatever its code', async () => {
+    stub.answers.push({ status: 400, body: { error: { code: 'content_policy_violation' } } });
+    const set = await run();
+
+    expect([generations(), fs.existsSync(setPath(set, 'home.svg'))]).toEqual([2, true]);
+  });
+
   it('fails fast on another client error', async () => {
     stub.answers.push({ status: 400, body: { error: { code: 'invalid_prompt', message: 'bad' } } });
     ({ project } = makeProject({ icons: HOME_ONLY, targetFiles: [] }));
@@ -192,13 +214,6 @@ describe('startRun', () => {
       false,
       [expect.stringContaining(`${set}/home`)]
     ]);
-  });
-
-  it('gives up after five attempts', async () => {
-    stub.always = { status: 429, headers: { 'retry-after': '1' }, body: { error: { message: 'slow down' } } };
-    const set = await run();
-
-    expect([generations(), readSet(project, set).failed]).toEqual([5, ['home']]);
   });
 
   it('refuses an unknown style', async () => {
@@ -220,16 +235,67 @@ describe('redraw', () => {
     const set = await run();
     const drawn = read(setPath(set, 'home.svg'));
     stub.answers.push({ status: 400, body: { error: { code: 'invalid_prompt', message: 'bad' } } });
-    await redraw(project, settings, set, ['home'], newJob());
+    await redraw(project, settings, [{ set, stem: 'home' }], newJob());
 
     expect([read(setPath(set, 'home.svg')), readSet(project, set).failed]).toEqual([drawn, []]);
+  });
+
+  it('records a failed redraw and keeps the drawing', async () => {
+    const set = await run();
+    const drawn = read(setPath(set, 'home.svg'));
+    stub.answers.push(BAD_REQUEST);
+    await redraw(project, settings, [{ set, stem: 'home' }], newJob());
+    const { failed, failures } = readSet(project, set);
+
+    expect([read(setPath(set, 'home.svg')), failed, failures]).toEqual([
+      drawn,
+      [],
+      { home: { cause: 'other', message: 'bad' } }
+    ]);
+  });
+
+  it('clears the failure of a stem once it is drawn', async () => {
+    stub.answers.push(BAD_REQUEST);
+    const set = await run();
+    await redraw(project, settings, [{ set, stem: 'home' }], newJob());
+    const { failed, failures } = readSet(project, set);
+
+    expect([failed, failures]).toEqual([[], {}]);
+  });
+
+  it('reads an older set without failures as having none', async () => {
+    const set = await run();
+    const { failures: _failures, ...older } = readSet(project, set);
+    fs.writeFileSync(setPath(set, RUN_FILE), JSON.stringify(older));
+
+    expect(readSet(project, set).failures).toEqual({});
+  });
+
+  it('redraws across sets', async () => {
+    const [soft, sharp] = await runBoth();
+    const job = newJob();
+    stub.requests.length = 0;
+    await redraw(
+      project,
+      settings,
+      [
+        { set: soft, stem: 'home' },
+        { set: sharp, stem: 'home' }
+      ],
+      job
+    );
+
+    expect([stub.requests.map((r) => r.body['prompt']).sort(), job.sets]).toEqual([
+      [HOME_PROMPT, SHARP_PROMPT.replaceAll('{subject}', 'a house')].sort(),
+      [soft, sharp]
+    ]);
   });
 
   it("redraws with the set's prompt and clears its flips", async () => {
     const set = await run();
     fs.writeFileSync(path.join(project.styles, 'soft.md'), '# Changed\n\nDraw {subject} differently.\n');
     updateSet(project, set, (info) => ({ ...info, flips: { home: [[1, 2]] } }));
-    await redraw(project, settings, set, ['home'], newJob());
+    await redraw(project, settings, [{ set, stem: 'home' }], newJob());
 
     expect([stub.requests.at(-1)!.body['prompt'], readSet(project, set).flips]).toEqual([HOME_PROMPT, {}]);
   });
@@ -242,7 +308,7 @@ describe('redraw', () => {
     const started = await request(port, 'POST', '/api/runs', { body: { styles: ['soft'], quality: 'medium' } });
     const set = ((await request(port, 'GET', '/api/state')).json['sets'] as { set: string }[])[0].set;
     const again = await request(port, 'POST', '/api/runs', { body: { styles: ['soft'], quality: 'medium' } });
-    const redrawn = await request(port, 'POST', '/api/redraw', { body: { set, stems: ['home'] } });
+    const redrawn = await request(port, 'POST', '/api/redraw', { body: { work: [{ set, stem: 'home' }] } });
     await settled(port);
     await close(server);
 
@@ -265,6 +331,42 @@ describe('describe', () => {
       content[1].image_url?.url.startsWith('data:image/png;base64,'),
       subject
     ]).toEqual(['chat', 'chat-model', true, true, 'a house with a door']);
+  });
+});
+
+describe('rephrase', () => {
+  it('rephrases a style through the describe model', async () => {
+    stub.chatText = `  ${REPHRASED}\n`;
+    const answer = await rephrase(settings, SOFT_PROMPT, 'it was refused');
+    const sent = stub.requests[0];
+    const text = (sent.body['messages'] as { content: { text: string }[] }[])[0].content[0].text;
+
+    expect([
+      sent.endpoint,
+      sent.body['model'],
+      [SOFT_PROMPT, 'it was refused'].every((part) => text.includes(part)),
+      answer
+    ]).toEqual(['chat', 'chat-model', true, REPHRASED]);
+  });
+
+  it('rephrases a subject through the describe model, with its style', async () => {
+    stub.chatText = '  a simple house outline\n';
+    const answer = await rephraseSubject(settings, 'a house', 'it was refused', SOFT_PROMPT);
+    const sent = stub.requests[0];
+    const text = (sent.body['messages'] as { content: { text: string }[] }[])[0].content[0].text;
+
+    expect([
+      sent.endpoint,
+      sent.body['model'],
+      ['a house', 'it was refused', SOFT_PROMPT].every((part) => text.includes(part)),
+      answer
+    ]).toEqual(['chat', 'chat-model', true, 'a simple house outline']);
+  });
+
+  it('answers the words of the endpoint when it fails', async () => {
+    stub.chatAnswer = { status: 400, body: { error: { message: 'refused' } } };
+
+    await expect(rephrase(settings, SOFT_PROMPT, 'it was refused')).rejects.toThrow('refused');
   });
 });
 

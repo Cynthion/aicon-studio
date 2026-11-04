@@ -62,6 +62,18 @@ figcaption {
   font-size: 12px;
   color: var(--muted);
 }
+.flip-tools {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.flip-tools button.icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.flip-tools button:not(.icon) {
+  font-size: 12px;
+}
 .sizes {
   display: flex;
   flex-wrap: wrap;
@@ -80,6 +92,17 @@ figcaption {
 }
 .actions {
   margin-top: 12px;
+}
+.failure {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--danger);
+  border-radius: 4px;
+  background: var(--bg);
+}
+.failure p {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
 }
 @media (max-width: 900px) {
   aside {

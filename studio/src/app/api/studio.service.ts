@@ -4,7 +4,7 @@ import { ToastService } from '../ui/toast/toast.service';
 import type { State } from './api.model';
 import { ApiService } from './api.service';
 import { folderName, messageOf } from './studio.helpers';
-import type { DialogName, Prefs, Selection, StyleDraft } from './studio.model';
+import type { DialogName, Prefs, Rephrasing, Selection, StyleDraft } from './studio.model';
 
 const PREFS_KEY = 'aicon-studio';
 const RECENT = 8;
@@ -15,6 +15,7 @@ const loadPrefs = (): Prefs => {
     size: 32,
     theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
     pair: 'side',
+    flipMarkers: true,
     hidden: [],
     order: [],
     runStems: [],
@@ -42,6 +43,8 @@ export class StudioService {
   /** Stem -> a subject not saved yet. */
   readonly drafts = signal<Record<string, string>>({});
   readonly styleDraft = signal<StyleDraft | undefined>(undefined);
+  /** What the rephrase dialog works on. */
+  readonly rephrasing = signal<Rephrasing | undefined>(undefined);
   /** A stem whose subject field the Icons view focuses once it shows, such as one just described. */
   readonly reveal = signal<string | undefined>(undefined);
   readonly busy = computed(() => !!this.state()?.job?.running);
@@ -93,6 +96,12 @@ export class StudioService {
     } finally {
       await this.reload();
     }
+  }
+
+  /** Opens the rephrase dialog. */
+  rephrase(target: Rephrasing): void {
+    this.rephrasing.set(target);
+    this.dialog.set('rephrase');
   }
 
   updatePrefs(patch: Partial<Prefs>): void {

@@ -53,6 +53,13 @@
               Revert
             </button>
           }
+          <button
+            type="button"
+            [disabled]="!!promptError()"
+            [title]="promptError() ?? 'The describe model rephrases this prompt for a reason you give'"
+            (click)="rephrase()">
+            Rephrase…
+          </button>
           @if (!isNew()) {
             <button
               type="button"

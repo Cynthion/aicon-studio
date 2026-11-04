@@ -1,0 +1,11 @@
+.rephrase {
+  justify-self: start;
+}
+.prompt {
+  --formidable-textarea-min-height: 14rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+pre {
+  max-height: 200px;
+  overflow: auto;
+}

@@ -34,6 +34,8 @@ export interface Stub {
   /** Milliseconds each image request waits before it is answered. */
   delayMs: number;
   chatText: string;
+  /** The answer to every chat request, instead of `chatText`. */
+  chatAnswer?: Answer;
   close: () => Promise<void>;
 }
 
@@ -86,7 +88,7 @@ export const startStub = (pngs: Record<string, string> = PNGS): Promise<Stub> =>
           : { fields: JSON.parse(raw.toString('utf8') || '{}') as Record<string, unknown>, image: 0 };
         stub.requests.push({ endpoint, headers: req.headers, body: fields, image, at: Date.now() });
         if (endpoint === 'chat') {
-          return send({ status: 200, body: { choices: [{ message: { content: stub.chatText } }] } });
+          return send(stub.chatAnswer ?? { status: 200, body: { choices: [{ message: { content: stub.chatText } }] } });
         }
         const answer = (): Answer => {
           const queued = stub.always ?? stub.answers.shift();

@@ -82,6 +82,7 @@ export const makeProject = ({
       prompt: styles[style] ?? SOFT_PROMPT,
       icons: icons.filter(isDrawn).map(({ stem, subject }) => ({ stem, subject, referenced: false })),
       failed: [],
+      failures: {},
       flips: {}
     };
     fs.writeFileSync(path.join(setDir, RUN_FILE), `${JSON.stringify(info, null, 2)}\n`);

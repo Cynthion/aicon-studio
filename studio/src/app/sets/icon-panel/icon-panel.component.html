@@ -35,6 +35,35 @@
         <figcaption>
           {{ deriving() ? 'Deriving the fill…' : 'Filled · click a region to switch it between filled and white' }}
         </figcaption>
+        <div class="flip-tools">
+          <button
+            type="button"
+            class="icon"
+            aria-label="Undo last flip"
+            title="Undo last flip · ⌘Z / Ctrl+Z"
+            [disabled]="!flips().length || studio.busy() || deriving()"
+            (click)="undoFlip()">
+            <span aria-hidden="true">↶</span>
+          </button>
+          <button
+            type="button"
+            class="icon"
+            aria-label="Redo flip"
+            title="Redo flip · ⇧⌘Z / Ctrl+Y"
+            [disabled]="!undone().length || studio.busy() || deriving()"
+            (click)="redoFlip()">
+            <span aria-hidden="true">↷</span>
+          </button>
+          @if (flips().length) {
+            <button
+              type="button"
+              title="A dot marks every flip; hide them to see what is under them"
+              [attr.aria-pressed]="studio.prefs().flipMarkers"
+              (click)="toggleMarkers()">
+              Show flips
+            </button>
+          }
+        </div>
       } @else {
         <div class="frame">
           <i
@@ -65,12 +94,14 @@
   </div>
   @if (from(); as from) {
     <p>Rotation of {{ from }}.</p>
-  } @else if (drawnFrom(); as drawnFrom) {
-    <p>
-      <span class="muted">Drawn from:</span>
-      {{ drawnFrom }}
-      @if (drawnFrom !== subject()) {
-        <span class="muted">· the subject has changed since, see Icons</span>
+  } @else {
+    <p class="subject">
+      <span class="muted">Subject:</span>
+      {{ drawnSubject() ?? subject() }}
+      @if (drawnSubject() && drawnSubject() !== subject()) {
+        <br />
+        <span class="muted">Subject now, which the next redraw draws from:</span>
+        {{ subject() }}
       }
     </p>
   }
@@ -79,6 +110,20 @@
       <summary>Prompt of this set</summary>
       <pre>{{ prompt }}</pre>
     </details>
+  }
+  @if (failure(); as failure) {
+    <div
+      class="failure"
+      role="status">
+      <b>{{ failure.title }}</b>
+      <p class="hint">
+        @if (outline()) {
+          The last redraw failed, so this is the drawing before it.
+        }
+        {{ failure.advice }}
+      </p>
+      <p>{{ failure.message }}</p>
+    </div>
   }
   <div class="actions">
     @if (from(); as from) {
@@ -119,15 +164,13 @@
           (click)="redraw()">
           {{ redrawLabel() }}
         </button>
-      }
-      @if (flips().length) {
         <button
           type="button"
-          title="⌘Z / Ctrl+Z"
-          [disabled]="studio.busy() || deriving()"
-          (click)="undoFlip()">
-          Undo last flip
+          (click)="rephrase()">
+          Rephrase subject…
         </button>
+      }
+      @if (flips().length) {
         <button
           type="button"
           [disabled]="studio.busy() || deriving()"

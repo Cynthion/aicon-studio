@@ -5,13 +5,24 @@ import {
   type ElementRef,
   inject,
   input,
+  linkedSignal,
   signal,
   viewChild
 } from '@angular/core';
 import { Router } from '@angular/router';
 import type { Icon } from '../../api/api.model';
 import { ApiService } from '../../api/api.service';
-import { costLabel, fileUrl, isDrawn, messageOf, promptOf } from '../../api/studio.helpers';
+import {
+  causeText,
+  costLabel,
+  fileUrl,
+  isDrawn,
+  messageOf,
+  promptOf,
+  redoFlip,
+  rephrasingOf,
+  undoFlip
+} from '../../api/studio.helpers';
 import { StudioService } from '../../api/studio.service';
 import type { Column } from '../../api/studio.model';
 import { PairComponent } from '../../ui/pair/pair.component';
@@ -59,14 +70,25 @@ export class IconPanelComponent {
     const icon = this.icon();
     return isDrawn(icon) ? icon.subject : undefined;
   });
+  /** The cell by value, so a state read that leaves it as it is keeps the undone flips. */
+  private readonly cell = computed(() => `${this.column().id}/${this.stem()}`);
+  /** The flips an undo took back, newest last, until the next flip; another cell starts without. */
+  protected readonly undone = linkedSignal<string, [number, number][]>({
+    source: this.cell,
+    computation: () => []
+  });
   /** The subject the drawing was made from; none for a stem the set holds no drawing of. */
-  protected readonly drawnFrom = computed(() =>
+  protected readonly drawnSubject = computed(() =>
     this.outline() ? this.column().info?.icons.find((i) => i.stem === this.stem())?.subject : undefined
   );
   protected readonly canFlip = computed(() => this.inSet() && this.drawn() && !!this.outline());
   protected readonly prompt = computed(() => {
     const info = this.column().info;
     return info ? promptOf(this.state(), info.prompt, this.stem()) : undefined;
+  });
+  protected readonly failure = computed(() => {
+    const failure = this.column().info?.failures[this.stem()];
+    return failure ? { ...failure, ...causeText(failure.cause) } : undefined;
   });
   protected readonly redrawLabel = computed(() => `Redraw${costLabel(this.state(), [this.stem()])}`);
   protected readonly deriving = signal(false);
@@ -75,11 +97,12 @@ export class IconPanelComponent {
   private readonly frame = viewChild<ElementRef<HTMLElement>>('frame');
 
   constructor() {
-    // the fill inline, so a click maps to its viewBox units; a marker on every flip
+    // the fill inline, so a click maps to its viewBox units; a marker on every flip, unless they are hidden
     afterRenderEffect((onCleanup) => {
       const frame = this.frame()?.nativeElement;
       const url = this.fill();
       const flips = this.flips();
+      const markers = this.studio.prefs().flipMarkers;
       if (!frame || !url) {
         return;
       }
@@ -94,7 +117,7 @@ export class IconPanelComponent {
           frame.innerHTML = markup;
           const svg = frame.querySelector('svg')!;
           const side = Number(svg.getAttribute('viewBox')?.split(' ')[2] ?? 24);
-          for (const [x, y] of flips) {
+          for (const [x, y] of markers ? flips : []) {
             const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             Object.entries({
               'cx': x,
@@ -158,19 +181,33 @@ export class IconPanelComponent {
   }
 
   protected async redraw(): Promise<void> {
-    await this.studio.write('POST', '/api/redraw', { set: this.column().id, stems: [this.stem()] });
+    await this.studio.write('POST', '/api/redraw', { work: [{ set: this.column().id, stem: this.stem() }] });
+  }
+
+  protected rephrase(): void {
+    this.studio.rephrase(rephrasingOf(this.state(), this.column().id, this.stem()));
   }
 
   protected undoFlip(): Promise<void> {
-    return this.setFlips(this.flips().slice(0, -1));
+    const { flips, undone } = undoFlip({ flips: this.flips(), undone: this.undone() });
+    return this.setFlips(flips, undone);
+  }
+
+  protected redoFlip(): Promise<void> {
+    const { flips, undone } = redoFlip({ flips: this.flips(), undone: this.undone() });
+    return this.setFlips(flips, undone);
   }
 
   protected resetFlips(): Promise<void> {
     return this.setFlips([]);
   }
 
-  /** Stores the flips and derives the fill. Input meanwhile is ignored: it would build on a stale list. */
-  private async setFlips(points: [number, number][]): Promise<void> {
+  protected toggleMarkers(): void {
+    this.studio.updatePrefs({ flipMarkers: !this.studio.prefs().flipMarkers });
+  }
+
+  /** Stores the flips and derives the fill; `undone` is what a redo brings back. Input meanwhile is ignored: it would build on a stale list. */
+  private async setFlips(points: [number, number][], undone: [number, number][] = []): Promise<void> {
     if (this.studio.busy()) {
       this.toasts.error('Wait for the drawing job to finish');
       return;
@@ -178,6 +215,7 @@ export class IconPanelComponent {
     if (this.deriving()) {
       return;
     }
+    this.undone.set(undone);
     this.deriving.set(true);
     try {
       await this.studio.write('PUT', '/api/flips', { set: this.column().id, stem: this.stem(), points });
@@ -191,10 +229,17 @@ export class IconPanelComponent {
     if (event.key === 'Escape' && !target.closest('dialog, [role="menu"]')) {
       this.close();
     }
-    const undo = event.key === 'z' && (event.metaKey || event.ctrlKey) && !event.shiftKey;
-    if (undo && this.flips().length && !target.closest('input, textarea')) {
+    if (target.closest('input, textarea') || !(event.metaKey || event.ctrlKey)) {
+      return;
+    }
+    const key = event.key.toLowerCase();
+    if (key === 'z' && !event.shiftKey && this.flips().length) {
       event.preventDefault();
       void this.undoFlip();
+    }
+    if (((key === 'z' && event.shiftKey) || key === 'y') && this.undone().length) {
+      event.preventDefault();
+      void this.redoFlip();
     }
   }
 }

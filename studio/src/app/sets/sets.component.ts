@@ -3,6 +3,7 @@ import { afterNextRender, Component, computed, inject, Injector, signal } from '
 import { Router } from '@angular/router';
 import type { Icon } from '../api/api.model';
 import {
+  cellLabel,
   cellState,
   columns,
   costLabel,
@@ -36,6 +37,7 @@ export class SetsComponent {
   private readonly injector = inject(Injector);
 
   protected readonly sizes = SIZES;
+  protected readonly cellLabel = cellLabel;
   protected readonly cellState = cellState;
   protected readonly fileUrl = fileUrl;
   protected readonly state = computed(() => this.studio.state()!);
@@ -110,7 +112,9 @@ export class SetsComponent {
     const set = column.id;
     switch (action) {
       case 'complete':
-        await this.studio.write('POST', '/api/redraw', { set, stems: missingStems(this.state(), column) });
+        await this.studio.write('POST', '/api/redraw', {
+          work: missingStems(this.state(), column).map((stem) => ({ set, stem }))
+        });
         return;
       case 'style-from':
         this.studio.styleDraft.set({ name: `${column.info!.style}-2`, prompt: column.info!.prompt, isNew: true });

@@ -1,23 +1,32 @@
-import type { Icon, Job, SetEntry, State } from './api.model';
+import type { Cause, Icon, Job, SetEntry, State } from './api.model';
 import {
+  cellLabel,
   cellState,
   chosenStems,
   columns,
   costBreakdown,
   costLabel,
+  type FailedDrawing,
+  failureGroups,
+  failureList,
   fileUrl,
   flowSteps,
   ICONS_COLUMN,
   jobText,
+  logText,
   missingStems,
   nextStep,
+  notDrawnList,
   priceError,
   promptOf,
+  redoFlip,
+  rephrasingOf,
   reorder,
   runSummary,
   stemError,
   styleNameError,
-  stylePromptError
+  stylePromptError,
+  undoFlip
 } from './studio.helpers';
 import type { Column } from './studio.model';
 
@@ -44,6 +53,7 @@ const set = (id: string, files: string[] = ['home', 'home-filled'], failed: stri
       prompt: '# Soft\n{subject}',
       icons: [],
       failed,
+      failures: {},
       flips: {}
     },
     files: Object.fromEntries(files.map((file, i) => [file, i + 1]))
@@ -203,6 +213,166 @@ describe('jobText', () => {
       jobText(job({ running: false, done: 8, total: 8, failed: ['a/home: x'] })),
       jobText(job({ kind: 'redraw', running: false, done: 2, total: 2 }))
     ]).toEqual(['run done: 7 drawn, 1 failed', 'redraw done: 2 drawn']);
+  });
+});
+
+describe('jobText of a finished job', () => {
+  it('counts what still failed, whichever job it came from', () => {
+    expect(jobText(job({ kind: 'redraw', running: false, done: 7, total: 7 }), 2)).toBe(
+      'redraw done: 7 drawn, 2 failed'
+    );
+  });
+});
+
+describe('failures', () => {
+  const failing = (id: string, stem: string, cause: Cause): SetEntry => {
+    const entry = set(id, [], [stem]);
+    return { ...entry, info: { ...entry.info, failures: { [stem]: { cause, message: `${cause} of ${stem}` } } } };
+  };
+  const drawing = (cause: Cause, setId = A, stem = 'home'): FailedDrawing => ({
+    set: setId,
+    style: 'soft',
+    stem,
+    cause,
+    message: 'm'
+  });
+
+  it('lists the failures of every set, newest first', () => {
+    const s = state({ sets: [failing(B, 'home', 'safety'), set(C), failing(A, 'search', 'other')] });
+
+    expect(failureList(s)).toEqual([
+      { set: B, style: 'sharp', stem: 'home', cause: 'safety', message: 'safety of home' },
+      { set: A, style: 'soft', stem: 'search', cause: 'other', message: 'other of search' }
+    ]);
+  });
+
+  it('leaves out the failure of an icon removed since', () => {
+    const s = state({ sets: [failing(A, 'gone', 'safety'), failing(B, 'home', 'safety')] });
+
+    expect(failureList(s).map(({ stem }) => stem)).toEqual(['home']);
+  });
+
+  it('groups failures by cause, in a fixed order, without empty groups', () => {
+    const groups = failureGroups([drawing('other'), drawing('safety'), drawing('other')]);
+
+    expect(groups.map((group) => [group.cause, group.failures.length])).toEqual([
+      ['safety', 1],
+      ['other', 2]
+    ]);
+  });
+
+  it('names the cause in the cell', () => {
+    const labels = (['safety', 'other'] as Cause[]).map((cause) =>
+      cellLabel('failed', column(state({ sets: [failing(A, 'home', cause)] }), A), icon('home'))
+    );
+
+    expect(labels).toEqual(['blocked', 'failed']);
+  });
+
+  it('keeps failed for a stem without a recorded failure', () => {
+    expect(cellLabel('failed', column(state({ sets: [set(A, [], ['home'])] }), A), icon('home'))).toBe('failed');
+  });
+
+  it('gives a rotation the failure of its from icon', () => {
+    const s = state({ sets: [failing(A, 'chevron-right', 'safety')] });
+
+    expect(cellLabel('failed', column(s, A), icon('chevron-down'))).toBe('blocked');
+  });
+});
+
+describe('notDrawnList', () => {
+  /** A set that planned `stems`, as its run recorded them. */
+  const planned = (entry: SetEntry, stems: string[]): SetEntry => ({
+    ...entry,
+    info: { ...entry.info, icons: stems.map((stem) => ({ stem, subject: stem, referenced: false })) }
+  });
+
+  it('lists the icons a set planned but holds no outline and no failure of', () => {
+    const s = state({
+      sets: [planned(set(A, ['home', 'home-filled'], ['chevron-right']), ['home', 'search', 'chevron-right'])]
+    });
+
+    expect(notDrawnList(s)).toEqual([
+      { set: A, style: 'soft', stem: 'search' },
+      { set: A, style: 'soft', stem: 'chevron-right' }
+    ]);
+  });
+
+  it('leaves out what a set never planned', () => {
+    const s = state({ sets: [planned(set(A, []), ['home'])] });
+
+    expect(notDrawnList(s).map(({ stem }) => stem)).toEqual(['home']);
+  });
+
+  it('leaves out recorded failures, removed icons and the sets of a running job', () => {
+    const recorded = planned(set(A, []), ['home', 'gone']);
+    const failed = {
+      ...recorded,
+      info: { ...recorded.info, failures: { home: { cause: 'safety' as const, message: 'm' } } }
+    };
+    const drawing = planned(set(B, []), ['home']);
+
+    expect(notDrawnList(state({ sets: [drawing, failed], job: job({ sets: [B] }) }))).toEqual([]);
+  });
+
+  it('counts what the sets lack while no job runs', () => {
+    expect([logText(3, 12), logText(0, 12), logText(0, 0)]).toEqual(['3 failed, 12 not drawn', '12 not drawn', '']);
+  });
+});
+
+describe('jobText of a paused or halted job', () => {
+  it('names the wait of a job paused by a rate limit', () => {
+    const paused = job({ done: 3, total: 8, waitingUntil: 1_040_000 });
+
+    expect(jobText(paused, 0, 1_000_000)).toBe('Drawing 3/8 · waiting 40 s: rate limit');
+  });
+
+  it('names why a job stopped itself', () => {
+    const halted = job({ running: false, stopped: true, done: 2, total: 8, halted: { cause: 'quota', message: 'x' } });
+
+    expect(jobText(halted)).toBe('run stopped: no quota or credit');
+  });
+});
+
+describe('rephrasingOf', () => {
+  const failed = (entry: SetEntry, stem: string): SetEntry => ({
+    ...entry,
+    info: { ...entry.info, failures: { [stem]: { cause: 'safety', message: `${stem} in ${entry.set} was refused` } } }
+  });
+
+  it('starts a subject rephrase from the failure and redraws the icon wherever it failed', () => {
+    const s = state({ sets: [failed(set(B), 'home'), failed(set(A), 'home')] });
+
+    expect(rephrasingOf(s, A, 'home')).toEqual({
+      kind: 'subject',
+      name: 'home',
+      text: 'a house',
+      reason: `home in ${A} was refused`,
+      set: A,
+      work: [
+        { set: A, stem: 'home' },
+        { set: B, stem: 'home' }
+      ]
+    });
+  });
+
+  it('starts without a reason for a drawing that did not fail', () => {
+    const { reason, work } = rephrasingOf(state({ sets: [set(A)] }), A, 'home');
+
+    expect([reason, work]).toEqual(['', [{ set: A, stem: 'home' }]]);
+  });
+});
+
+describe('flip history', () => {
+  const P: [number, number] = [1, 2];
+  const Q: [number, number] = [3, 4];
+
+  it('an undo moves the newest flip onto the undone flips', () => {
+    expect(undoFlip({ flips: [P, Q], undone: [] })).toEqual({ flips: [P], undone: [Q] });
+  });
+
+  it('a redo moves the newest undone flip back', () => {
+    expect(redoFlip({ flips: [P], undone: [Q] })).toEqual({ flips: [P, Q], undone: [] });
   });
 });
 

@@ -23,6 +23,7 @@ import {
   tmpDir,
   type Reply
 } from './helpers.ts';
+import { startStub } from './stub.ts';
 
 const SET = '2026-01-01-0000/soft';
 const FLIP: [number, number] = [509.1, 516.1];
@@ -407,16 +408,68 @@ describe('runs and redraws', () => {
 
   it('refuses a redraw of an unknown set', async () => {
     await start({}, COMPLETE_SETTINGS);
-    const reply = await api('POST', '/api/redraw', { set: 'nope/soft', stems: ['home'] });
+    const reply = await api('POST', '/api/redraw', { work: [{ set: 'nope/soft', stem: 'home' }] });
 
-    expect(reply.status).toBe(400);
+    expect([reply.status, reply.json['error']]).toEqual([400, 'unknown set: nope/soft']);
   });
 
-  it('refuses a redraw without stems', async () => {
+  it('refuses a redraw without work', async () => {
     await start({}, COMPLETE_SETTINGS);
-    const reply = await api('POST', '/api/redraw', { set: SET, stems: [] });
+    const reply = await api('POST', '/api/redraw', { work: [] });
 
-    expect(reply.status).toBe(400);
+    expect([reply.status, reply.json['error']]).toEqual([400, 'choose at least one icon']);
+  });
+});
+
+describe('rephrase', () => {
+  const PROMPT = '# Soft\n\nDraw {subject}.';
+
+  it('answers a rephrased prompt', async () => {
+    const stub = await startStub();
+    stub.chatText = '# Softer\n\nDraw {subject}.';
+    await start({}, { ...COMPLETE_SETTINGS, baseUrl: stub.url });
+    const reply = await api('POST', '/api/rephrase', { prompt: PROMPT, reason: 'too hard' });
+    await stub.close();
+
+    expect([reply.status, reply.json]).toEqual([200, { prompt: stub.chatText }]);
+  });
+
+  it('answers a rephrased subject of a drawn icon', async () => {
+    const stub = await startStub();
+    stub.chatText = 'a simple house outline';
+    await start({}, { ...COMPLETE_SETTINGS, baseUrl: stub.url });
+    const reply = await api('POST', '/api/rephrase', { stem: 'home', set: SET, reason: 'it was refused' });
+    await stub.close();
+
+    expect([reply.status, reply.json]).toEqual([200, { subject: 'a simple house outline' }]);
+  });
+
+  it('refuses to rephrase the subject of a rotation', async () => {
+    await start({}, COMPLETE_SETTINGS);
+    const reply = await api('POST', '/api/rephrase', { stem: 'chevron-down', reason: 'too hard' });
+
+    expect([reply.status, reply.json['error']]).toEqual([400, 'chevron-down is not a drawn icon']);
+  });
+
+  it('refuses a rephrase without a reason', async () => {
+    await start({}, COMPLETE_SETTINGS);
+    const reply = await api('POST', '/api/rephrase', { prompt: PROMPT, reason: '  ' });
+
+    expect([reply.status, reply.json['error']]).toEqual([400, 'give a reason']);
+  });
+
+  it('refuses to rephrase a prompt without {subject}', async () => {
+    await start({}, COMPLETE_SETTINGS);
+    const reply = await api('POST', '/api/rephrase', { prompt: '# X', reason: 'too hard' });
+
+    expect([reply.status, reply.json['error']]).toEqual([400, 'a style prompt needs {subject}']);
+  });
+
+  it('refuses a rephrase before the settings are complete', async () => {
+    await start();
+    const reply = await api('POST', '/api/rephrase', { prompt: PROMPT, reason: 'too hard' });
+
+    expect([reply.status, reply.json['error']]).toEqual([400, 'Enter the base URL, API key and models in Settings']);
   });
 });
 

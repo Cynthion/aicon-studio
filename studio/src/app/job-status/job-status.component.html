@@ -1,10 +1,10 @@
-@if (job(); as job) {
+@if (text()) {
   <button
     type="button"
     class="chip"
     popovertarget="job-list"
-    [class.running]="job.running"
-    [class.failed]="!job.running && (job.failed.length || job.error)">
+    [class.running]="job()?.running"
+    [class.failed]="failed()">
     {{ text() }}
   </button>
   @if (canStop()) {
@@ -16,16 +16,101 @@
       Stop
     </button>
   }
-  <div
-    id="job-list"
-    class="card"
-    popover>
-    <ul>
-      @for (line of lines(); track $index) {
-        <li>{{ line }}</li>
-      } @empty {
-        <li>Nothing to show</li>
-      }
-    </ul>
-  </div>
 }
+<div
+  #log
+  id="job-list"
+  class="card"
+  aria-label="Job log"
+  popover>
+  <h2>Job log</h2>
+  @if (job()?.halted; as halted) {
+    <section
+      class="halted"
+      role="status">
+      <h3>The job stopped: {{ causeText(halted.cause).title }}</h3>
+      <p class="hint">{{ causeText(halted.cause).advice }}</p>
+      <p class="message">{{ halted.message }}</p>
+      @if (halted.cause !== 'quota') {
+        <button
+          type="button"
+          (click)="openSettings()">
+          Open Settings
+        </button>
+      }
+    </section>
+  }
+  @if (drawing().length) {
+    <section>
+      <h3>
+        Drawing now <span class="count">{{ drawing().length }}</span>
+      </h3>
+      <ul>
+        @for (item of drawing(); track item.name) {
+          <li class="row">
+            <b>{{ item.stem }}</b>
+            <span class="muted">{{ item.style }} · {{ item.run }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+  @for (section of sections(); track section.key) {
+    <section>
+      <div class="heading">
+        <h3>
+          {{ section.title }} <span class="count">{{ section.entries.length }}</span>
+        </h3>
+        @if (section.entries.length > 1) {
+          <button
+            type="button"
+            [disabled]="studio.busy()"
+            [title]="studio.busy() ? 'Wait for the drawing job' : ''"
+            (click)="redraw(section.entries)">
+            {{ redrawAllLabel(section.entries) }}
+          </button>
+        }
+      </div>
+      <p class="hint">{{ section.advice }}</p>
+      <ul>
+        @for (entry of section.entries; track entry.set + entry.stem) {
+          <li>
+            <div class="row">
+              <button
+                type="button"
+                class="stem"
+                title="Open the icon panel"
+                (click)="open(entry)">
+                {{ entry.stem }}
+              </button>
+              <span class="muted">{{ entry.style }} · {{ entry.set.split('/')[0] }}</span>
+              <span class="spacer"></span>
+              <button
+                type="button"
+                [attr.aria-label]="'Redraw ' + entry.stem + ' in ' + entry.set"
+                [disabled]="studio.busy()"
+                [title]="studio.busy() ? 'Wait for the drawing job' : ''"
+                (click)="redraw([entry])">
+                Redraw
+              </button>
+              @if (section.rephrase) {
+                <button
+                  type="button"
+                  [attr.aria-label]="'Rephrase the subject of ' + entry.stem"
+                  (click)="rephrase(entry)">
+                  Rephrase subject…
+                </button>
+              }
+            </div>
+            @if (entry.message) {
+              <details>
+                <summary>Message of the endpoint</summary>
+                <p>{{ entry.message }}</p>
+              </details>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</div>

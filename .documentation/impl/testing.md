@@ -48,7 +48,7 @@ Expected values come from the requirement, not from the code. A spec written aft
 
 ## Writing A Spec
 
-- **Location**: `test/<module>.spec.ts` for `src/<module>.ts`, and `test/fill.spec.ts` for the raster fill, with one `describe` per exported function or route group. A spec of the page sits beside its file, `studio/src/app/**/<name>.spec.ts`.
+- **Location**: `test/<module>.spec.ts` for `src/<module>.ts`, `test/fill.spec.ts` for the raster fill and `test/failure.spec.ts` for the causes of a failed drawing, whose real retry delays run side by side, with one `describe` per exported function or route group. A spec of the page sits beside its file, `studio/src/app/**/<name>.spec.ts`.
 - **Behavior, Not Mechanism**: an `it` names the rule it proves, such as `'keeps the stored key when none is sent'`, and asserts on the answer, the file or the request. It is not named after the bug that prompted it.
 - **One Rule Per Test**: an `it` proves one rule, with one `expect` where practical; several values go into one array.
 - **Own Project**: a spec builds its project in a temporary folder with `makeProject` of `test/helpers.ts`, from the fixture files, and never runs against `example/`.
@@ -61,7 +61,7 @@ Expected values come from the requirement, not from the code. A spec written aft
 
 ## The Stub Endpoint
 
-`startStub` in `test/stub.ts` serves `images/generations`, `images/edits` and `chat/completions` on a free port and records every request: endpoint, headers, body fields, and the size of the `image[]` part of an edit. An image request is answered with the fixture PNG whose subject the prompt contains, `test/fixtures/png/`, so a run draws real outlines. `answers` queues one answer per coming request before the PNGs, `always` replaces them, and `delayMs` holds every answer, which is how rate limits, safety blocks, client errors and a running job are proven.
+`startStub` in `test/stub.ts` serves `images/generations`, `images/edits` and `chat/completions` on a free port and records every request: endpoint, headers, body fields, and the size of the `image[]` part of an edit. An image request is answered with the fixture PNG whose subject the prompt contains, `test/fixtures/png/`, so a run draws real outlines. `answers` queues one answer per coming request before the PNGs, `always` replaces them, and `delayMs` holds every answer, which is how rate limits, safety blocks, client errors and a running job are proven. `chatText` is the answer to a chat request, and `chatAnswer` replaces it.
 
 ---
 

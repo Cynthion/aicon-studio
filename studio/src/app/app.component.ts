@@ -4,6 +4,7 @@ import { StudioService } from './api/studio.service';
 import { flowSteps, folderName, nextStep } from './api/studio.helpers';
 import { JobStatusComponent } from './job-status/job-status.component';
 import { ProjectDialogComponent } from './project-dialog/project-dialog.component';
+import { RephraseDialogComponent } from './rephrase-dialog/rephrase-dialog.component';
 import { RunDialogComponent } from './run-dialog/run-dialog.component';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
 import { ConfirmComponent } from './ui/confirm/confirm.component';
@@ -17,6 +18,7 @@ import { ToastComponent } from './ui/toast/toast.component';
     ConfirmComponent,
     JobStatusComponent,
     ProjectDialogComponent,
+    RephraseDialogComponent,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,

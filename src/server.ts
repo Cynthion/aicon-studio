@@ -13,10 +13,13 @@ import {
   redraw,
   REFERENCE_PROMPT,
   refill,
+  rephrase,
+  rephraseSubject,
   setDir,
   sets,
   startRun,
   updateSet,
+  type Work,
   writeRotation
 } from './pipeline.ts';
 import {
@@ -60,6 +63,11 @@ const check = (ok: unknown, message: string, status = 400): void => {
   if (!ok) {
     throw new HttpError(status, message);
   }
+};
+
+const checkPrompt = (prompt: unknown): void => {
+  check(typeof prompt === 'string' && prompt.includes('{subject}'), 'a style prompt needs {subject}');
+  check((prompt as string).trim().startsWith('# '), 'a style prompt starts with a # heading');
 };
 
 const read = (file: string): string => (fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '');
@@ -239,8 +247,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
       'PUT',
       /^\/api\/styles\/([\w-]+)$/,
       ([name], { prompt }) => {
-        check(typeof prompt === 'string' && prompt.includes('{subject}'), 'a style prompt needs {subject}');
-        check((prompt as string).trim().startsWith('# '), 'a style prompt starts with a # heading');
+        checkPrompt(prompt);
         fs.mkdirSync(project.styles, { recursive: true });
         fs.writeFileSync(path.join(project.styles, `${name}.md`), `${(prompt as string).trim()}\n`);
       }
@@ -291,11 +298,13 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
     [
       'POST',
       /^\/api\/redraw$/,
-      (_, { set, stems }) => {
-        const known = knownSet(set);
-        check(Array.isArray(stems) && stems.length, 'choose at least one icon');
+      (_, { work }) => {
+        check(Array.isArray(work) && work.length, 'choose at least one icon');
+        for (const { set } of work as Work[]) {
+          knownSet(set);
+        }
         const stored = settings('imageModel');
-        begin('redraw', (j) => redraw(project, stored, known, stems as string[], j));
+        begin('redraw', (j) => redraw(project, stored, work as Work[], j));
       }
     ],
     [
@@ -404,6 +413,25 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
           .icons.filter(isDrawn)
           .find((i) => i.stem === stem)!;
         return { subject: await describe(settings('describeModel'), file, icon.stem, icon.subject) };
+      }
+    ],
+    [
+      'POST',
+      /^\/api\/rephrase$/,
+      async (_, { prompt, stem, set, reason }) => {
+        check(typeof reason === 'string' && reason.trim(), 'give a reason');
+        const why = (reason as string).trim();
+        if (stem === undefined) {
+          checkPrompt(prompt);
+          return { prompt: await rephrase(settings('describeModel'), prompt as string, why) };
+        }
+        // a subject, with the style of the set it was drawn in
+        const icon = readConfig(project)
+          .icons.filter(isDrawn)
+          .find((i) => i.stem === stem);
+        check(icon, `${stem as string} is not a drawn icon`);
+        const style = set === undefined ? undefined : readSet(project, knownSet(set)).prompt;
+        return { subject: await rephraseSubject(settings('describeModel'), icon!.subject, why, style) };
       }
     ],
     [

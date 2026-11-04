@@ -142,7 +142,7 @@
                       [fill]="fileUrl(column, icon.stem + '-filled')"
                       [mode]="studio.prefs().pair" />
                     @if (cell) {
-                      <span class="state">{{ cell }}</span>
+                      <span class="state">{{ cellLabel(cell, column, icon) }}</span>
                     }
                     @if (reference) {
                       <span

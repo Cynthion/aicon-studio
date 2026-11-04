@@ -4,7 +4,9 @@ The single source of truth for work items, in priority order; bugs come first. A
 
 ## Bugs
 
-None.
+- **SIGTERM Closes Chromium, Not The Studio**:
+  - **Context**: Playwright closes its Chromium on `SIGTERM` without ending the process, so a studio sent `SIGTERM` during a job keeps serving while every drawing in flight fails with `Target page, context or browser has been closed`. The job log lists them under **Other failures**, with the studio's own error as **Message of the endpoint**. `Ctrl+C`, `SIGINT`, ends the studio as it should.
+  - **Proposal**: end the process on `SIGTERM` as on `SIGINT`, and record a failure the studio caused, not the endpoint, under a cause of its own.
 
 ## Features
 
@@ -26,12 +28,15 @@ None.
 - **Keyboard Grid In Sets**:
   - **Context**: the Sets table is reached cell by cell with `Tab`, one stop per icon and column.
   - **Proposal**: a grid with arrow-key navigation and one tab stop, `@angular/aria` Grid, see [`impl/angular.md`](angular.md).
-- **Recovery Per Failure**:
-  - **Context**: a failed drawing shows **failed** and the message in the job status, whatever the cause: a rate limit, a safety block or a client error.
-  - **Proposal**: name the cause in the cell and offer the action that fits it, such as waiting out a rate limit or rewording a blocked subject.
 - **Push The Job State**:
   - **Context**: the page reads `GET /api/state` every two seconds while a job runs, see **HTTP API** in [`tech/pipeline.md`](../tech/pipeline.md#http-api).
   - **Proposal**: server-sent events for the job, so a drawing shows the moment it is written.
+- **Edit The Config In The Studio**:
+  - **Context**: `aicon-studio.json` is edited one icon at a time, through **Add icon** and the subject fields of the Icons view, see [`user/workflow.md`](../user/workflow.md). A new project with many icons is slow to enter.
+  - **Proposal**: decide whether editing the file as text in the studio is worth it, such as to add many icons at the start, and build it if so.
+- **Start From Reference Images**:
+  - **Context**: a reference comes from a drawing of a set or of the current icons, so a project without drawings starts from subjects alone, see [`user/workflow.md`](../user/workflow.md).
+  - **Proposal**: decide whether an image from elsewhere, such as one found on the internet, can be added as the reference of an icon before any run, and build it if so.
 
 ## Security Findings
 

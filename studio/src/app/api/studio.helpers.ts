@@ -1,5 +1,5 @@
-import type { Drawn, Icon, Job, State, Style } from './api.model';
-import type { CellState, Column, FlowStep } from './studio.model';
+import type { Cause, Drawn, Failure, Icon, Job, State, Style } from './api.model';
+import type { CellState, Column, FlowStep, Rephrasing } from './studio.model';
 
 /** The id of the column of the current icons; every other column is a set, `<run>/<style>`. */
 export const ICONS_COLUMN = 'icons';
@@ -55,6 +55,124 @@ export const cellState = (column: Column, icon: Icon, job: Job | undefined): Cel
     return '';
   }
   return running?.sets.includes(column.id) ? 'pending' : 'not drawn';
+};
+
+/** An icon of a set, as the job log lists it. */
+export interface Drawing {
+  set: string;
+  style: string;
+  stem: string;
+}
+
+/** A failure with the drawing it belongs to. */
+export interface FailedDrawing extends Drawing, Failure {}
+
+/** The flips of an icon, and those an undo took back, newest last. */
+export interface FlipHistory {
+  flips: [number, number][];
+  undone: [number, number][];
+}
+
+/**
+ * The drawn icons a set planned, or lists as failed, that it holds no outline and records no failure of: a stop, a closed
+ * studio or a failure from before the job log left them. The sets of a running job are left out; their icons are pending.
+ */
+export const notDrawnList = (state: State): Drawing[] => {
+  const running = state.job?.running ? state.job.sets : [];
+  const drawn = new Set(state.config.icons.filter(isDrawn).map((icon) => icon.stem));
+  return state.sets
+    .filter(({ set }) => !running.includes(set))
+    .flatMap(({ set, info, files }) =>
+      [...new Set([...info.icons.map(({ stem }) => stem), ...info.failed])]
+        .filter((stem) => drawn.has(stem) && files[stem] === undefined && !info.failures[stem])
+        .map((stem) => ({ set, style: info.style, stem }))
+    );
+};
+
+/** What the sets lack in one line, as the job status shows it while no job runs. */
+export const logText = (failed: number, notDrawn: number): string =>
+  [...(failed ? [`${failed} failed`] : []), ...(notDrawn ? [`${notDrawn} not drawn`] : [])].join(', ');
+
+export const undoFlip = ({ flips, undone }: FlipHistory): FlipHistory => ({
+  flips: flips.slice(0, -1),
+  undone: [...undone, flips.at(-1)!]
+});
+
+export const redoFlip = ({ flips, undone }: FlipHistory): FlipHistory => ({
+  flips: [...flips, undone.at(-1)!],
+  undone: undone.slice(0, -1)
+});
+
+export interface FailureGroup {
+  cause: Cause;
+  failures: FailedDrawing[];
+}
+
+/** What the page says about each cause: those of an icon in the order the job log lists them, then those of a job. */
+const CAUSES: Record<Cause, { title: string; cell: string; advice: string }> = {
+  safety: {
+    title: 'Blocked by the safety filter',
+    cell: 'blocked',
+    advice:
+      'The endpoint refused the prompt twice. Rephrase the subject; if a style blocks many icons, rephrase the style under Styles.'
+  },
+  other: {
+    title: 'Other failures',
+    cell: 'failed',
+    advice: 'The endpoint refused the request. Its message says why.'
+  },
+  quota: {
+    title: 'No quota or credit',
+    cell: 'failed',
+    advice: 'The endpoint has no quota or credit left for the image model. Top it up, then Redraw all.'
+  },
+  settings: {
+    title: 'Settings refused',
+    cell: 'failed',
+    advice: 'The endpoint refused the key, the model or the deployment. Check them in Settings, then Redraw all.'
+  },
+  unavailable: {
+    title: 'Endpoint unavailable',
+    cell: 'failed',
+    advice:
+      'No answer, or a server error, five times in a row. Check the connection and the base URL in Settings, then Redraw all.'
+  }
+};
+
+/** The heading and the advice of a cause, as the job log and the icon panel show them. */
+export const causeText = (cause: Cause): { title: string; advice: string } => CAUSES[cause];
+
+/** Every recorded failure of an icon of the config, in the order of the sets. */
+export const failureList = (state: State): FailedDrawing[] =>
+  state.sets.flatMap(({ set, info }) =>
+    Object.entries(info.failures)
+      .filter(([stem]) => state.config.icons.some((icon) => icon.stem === stem))
+      .map(([stem, failure]) => ({ set, style: info.style, stem, ...failure }))
+  );
+
+export const failureGroups = (failures: readonly FailedDrawing[]): FailureGroup[] =>
+  (['safety', 'other'] as Cause[])
+    .map((cause) => ({ cause, failures: failures.filter((failure) => failure.cause === cause) }))
+    .filter((group) => group.failures.length);
+
+/** What a cell says about its state: a failed icon names its cause, a rotation that of its `from` icon. */
+export const cellLabel = (state: CellState, column: Column, icon: Icon): string => {
+  const failure = column.info?.failures[isDrawn(icon) ? icon.stem : icon.from];
+  return state === 'failed' && failure ? CAUSES[failure.cause].cell : state;
+};
+
+/** A rephrase of the subject of a drawing: its failure gives the reason, and the icon is redrawn wherever it failed. */
+export const rephrasingOf = (state: State, set: string, stem: string): Rephrasing => {
+  const failures = failureList(state).filter((failure) => failure.stem === stem);
+  const icon = state.config.icons.find((i) => i.stem === stem);
+  return {
+    kind: 'subject',
+    name: stem,
+    text: icon && isDrawn(icon) ? icon.subject : '',
+    reason: failures.find((failure) => failure.set === set)?.message ?? '',
+    set,
+    work: [set, ...failures.map((failure) => failure.set).filter((s) => s !== set)].map((s) => ({ set: s, stem }))
+  };
 };
 
 /** The estimated cost of drawing the stems, or null without both prices. */
@@ -118,14 +236,18 @@ export const promptOf = (state: State, template: string, stem: string): string =
   return state.references[stem] === undefined ? prompt : `${prompt}\n\n${state.referencePrompt}`;
 };
 
-/** The job in one line, as the job status shows it. */
-export const jobText = (job: Job): string => {
+/** The job in one line, as the job status shows it; once it is over, `outstanding` counts what still failed in every set. */
+export const jobText = (job: Job, outstanding = job.failed.length, now = Date.now()): string => {
   const failed = job.failed.length;
   if (job.running && job.stopped) {
     return `Stopping: ${job.drawing.length} ${job.drawing.length === 1 ? 'drawing finishes' : 'drawings finish'}`;
   }
   if (job.running) {
-    return `Drawing ${job.done}/${job.total}${failed ? ` · ${failed} failed` : ''}`;
+    const wait = Math.ceil(((job.waitingUntil ?? 0) - now) / 1000);
+    return `Drawing ${job.done}/${job.total}${failed ? ` · ${failed} failed` : ''}${wait > 0 ? ` · waiting ${wait} s: rate limit` : ''}`;
+  }
+  if (job.halted) {
+    return `${job.kind} stopped: ${CAUSES[job.halted.cause].title.toLowerCase()}`;
   }
   if (job.stopped) {
     return `${job.kind} stopped: ${job.done - failed} drawn, ${job.total - job.done} not drawn`;
@@ -133,7 +255,7 @@ export const jobText = (job: Job): string => {
   if (job.error) {
     return `${job.kind} stopped: ${job.error}`;
   }
-  return `${job.kind} done: ${job.done - failed} drawn${failed ? `, ${failed} failed` : ''}`;
+  return `${job.kind} done: ${job.done - failed} drawn${outstanding ? `, ${outstanding} failed` : ''}`;
 };
 
 /** The drawn icons a set has no outline of: failed, stopped, left out of a test run, or added since. */

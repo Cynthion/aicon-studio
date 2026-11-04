@@ -67,19 +67,72 @@ The bottom of the dialog stays in view and shows the image count. With both pric
 
 While a run lacks something, the dialog names it and leads there instead, in the order of the setup: **Open Settings** for the endpoint, **Open Icons** for a first icon, **Open Styles** for a first style.
 
-One drawing job runs at a time. Its progress shows in the top bar, such as **Drawing 3/12**, and a click on it lists the drawings in flight and the failed icons. The page shows each icon as soon as it is drawn. A cell whose icon is being drawn shows **drawing**, one not drawn yet in this job **pending**, a failed one **failed**, and one the set has no drawing of **not drawn**.
+One drawing job runs at a time. Its progress shows in the top bar, such as **Drawing 3/12**, and a click on it opens the **Job log**, see **Failed Drawings**. The page shows each icon as soon as it is drawn. A cell whose icon is being drawn shows **drawing**, one not drawn yet in this job **pending**, a failed one its cause, and one the set has no drawing of **not drawn**.
 
 - **Test Run**: **New test run** beside **New run**, or **Test run: chosen icons** in the dialog, draws only the icons ticked under **Chosen icons**, and the rotations of those. A new style is judged on a few icons before every icon is paid for. The choice is kept for the next test run.
 - **Complete Set**: **Complete set** in the column menu, labelled with the icon count and cost, draws every icon the set has no drawing of, with the set's own prompt, model and quality: the rest of a test run, the icons a stop left, the failed ones, and icons added since.
 - **Stop**: **Stop** beside the job status starts no further drawing. The drawings already requested finish and are kept, since they are paid for either way; the rest stay **not drawn** until **Complete set**.
 
-A drawing that fails is tried again before its icon is listed as **failed**; **Complete set** in the column menu draws it again.
+---
+
+## Failed Drawings
+
+The studio treats a refused request by what it says about the endpoint, whatever the endpoint is:
+
+| Answer               | Treatment                                                                                                       |
+| :------------------- | :-------------------------------------------------------------------------------------------------------------- |
+| Rate limit           | Every drawing of the job waits as long as the endpoint asks, as often as it asks; the job status shows the wait |
+| No quota or credit   | The job stops at once                                                                                           |
+| Settings refused     | The key, the model or the deployment is refused: the job stops at once                                          |
+| Endpoint unavailable | No answer or a server error is tried five times, then the job stops                                             |
+| Safety filter        | The drawing is tried once more, then its icon fails                                                             |
+| Any other refusal    | The icon fails at once                                                                                          |
+
+A stopped job names its cause, its advice and the message of the endpoint at the top of the **Job log**, with **Open Settings** where the settings can help. A failed icon keeps its cause and the message of the endpoint in its set, so both outlast the job and a restart of the studio. A cell without a drawing shows **blocked** for the safety filter and **failed** otherwise; a failed redraw keeps the last drawing, and the icon panel names the cause.
+
+The **Job log**, opened from the job status in the top bar, lists the drawings in flight and what every set lacks, from the sets on disk, so it is the same after a restart or a switch to another project and back:
+
+| Group                            | Holds                                                                                                                       |
+| :------------------------------- | :-------------------------------------------------------------------------------------------------------------------------- |
+| **Blocked by the safety filter** | Icons the safety filter refused twice                                                                                       |
+| **Other failures**               | Icons the endpoint refused for another reason                                                                               |
+| **Not drawn**                    | Icons a set was drawn for but holds no drawing of: a stop, a closed studio, or an older failure without a message left them |
+
+While no job runs, the job status counts them, such as **3 failed, 12 not drawn**. An entry leaves the log once its icon is drawn, its set is deleted or the icon is removed.
+
+| Control                     | Does                                                                               |
+| :-------------------------- | :--------------------------------------------------------------------------------- |
+| Stem                        | Opens the icon panel of the drawing                                                |
+| **Redraw**                  | Draws this icon again                                                              |
+| **Redraw all**              | Draws every icon of the group again, across sets; labelled with the count and cost |
+| **Rephrase subject…**       | Opens **Rephrase the subject**, see **Rephrasing**; for a failed icon              |
+| **Message of the endpoint** | Shows what the endpoint said                                                       |
+
+The icon panel of a failed drawing shows the same cause, advice and message, and **Complete set** in the column menu draws every icon a set lacks.
+
+---
+
+## Rephrasing
+
+The describe model rephrases a subject or a style for a reason and keeps what it names. **Rephrase subject…** in the icon panel of a set or in the **Job log** opens **Rephrase the subject of `<stem>`**; **Rephrase…** in the **Styles** view opens **Rephrase the style `<name>`**.
+
+1. Write the **Reason**. After a failed drawing it starts with the message of the endpoint.
+2. Select **Rephrase**.
+3. Review the result and change it if needed. **Rephrase again** asks once more.
+4. Take the result, as below.
+
+| Rephrased | Button                               | Effect                                                                                      |
+| :-------- | :----------------------------------- | :------------------------------------------------------------------------------------------ |
+| Subject   | **Save subject and redraw `<stem>`** | Saves the subject of the icon, for every style, and redraws it in every set where it failed |
+| Style     | **Use this prompt**                  | Puts the result into the editor, unsaved; **Save** keeps it                                 |
+
+A subject sent with a reason also carries the prompt of the set, so the describe model knows the style the safety filter judged together with it. A style that blocks many icons is rephrased in the **Styles** view instead.
 
 ---
 
 ## Comparing
 
-A click on a cell opens the icon panel beside the table: **Outline** and **Filled** large, both at every size an app might use and on hover, the subject the drawing was made from under **Drawn from:**, and the prompt of the set under **Prompt of this set**. `Escape` or ✕ closes it.
+A click on a cell opens the icon panel beside the table: **Outline** and **Filled** large, both at every size an app might use and on hover, the subject the drawing was made from under **Subject:**, and the prompt of the set under **Prompt of this set**. A subject saved since shows beside it, as the one the next redraw draws from. `Escape` or ✕ closes it.
 
 | Switch          | Where       | Does                                                                      |
 | :-------------- | :---------- | :------------------------------------------------------------------------ |
@@ -112,7 +165,7 @@ The row of a referenced icon in the **Sets** view shows the reference and **refe
 
 ## Flips
 
-The fill is computed from the outline, not drawn: the silhouette with every hole filled, minus the interior lines. Whether an enclosed area is body or background is a matter of meaning, so a click on a region of **Filled** in the icon panel of a set switches it between filled and white and derives the fill again. **Undo last flip**, also `⌘Z` or `Ctrl+Z`, and **Reset flips**, labelled with the flip count, take it back. The contour never flips.
+The fill is computed from the outline, not drawn: the silhouette with every hole filled, minus the interior lines. Whether an enclosed area is body or background is a matter of meaning, so a click on a region of **Filled** in the icon panel of a set switches it between filled and white and derives the fill again. ↶ undoes the last flip and ↷ redoes it, also `⌘Z` or `Ctrl+Z` and `⇧⌘Z` or `Ctrl+Y`; **Reset flips**, labelled with the flip count, clears them. A dot marks every flip; **Show flips** hides the dots to show what is under them, kept in this browser. The contour never flips.
 
 An outline whose contour is open fills only partly and needs a redraw rather than a flip.
 
@@ -142,6 +195,7 @@ The **Styles** view lists every style on the left and edits the chosen one. **Ne
 | **Prompt**      | The prompt; it starts with a `#` heading and holds `{subject}`                         |
 | **Save**        | Writes the file                                                                        |
 | **Revert**      | Drops the unsaved changes                                                              |
+| **Rephrase…**   | Has the describe model rephrase the prompt for a reason, see **Rephrasing**            |
 | **Duplicate**   | Copies the prompt into a new style named `<name>-2`                                    |
 | **Delete…**     | Removes the style, after asking; its sets stay                                         |
 | **Preview for** | The icon whose prompt the preview shows                                                |
@@ -152,32 +206,36 @@ The **Styles** view lists every style on the left and edits the chosen one. **Ne
 
 ## Actions
 
-| Action                           | Where                         | Effect                                                                                        |
-| :------------------------------- | :---------------------------- | :-------------------------------------------------------------------------------------------- |
-| New run                          | Top bar                       | Draws every icon, or a test run of chosen icons, in each chosen style, after showing the cost |
-| New test run                     | Top bar                       | New run, preset to chosen icons                                                               |
-| Stop                             | Top bar, beside the job       | Starts no further drawing; the drawings in flight finish and are kept                         |
-| Settings                         | Top bar                       | The endpoint, key, models and prices                                                          |
-| Project                          | Top bar                       | Opens another project folder: one opened before, a typed path, or one chosen with **Browse…** |
-| Dark theme                       | Top bar                       | Switches the page between light and dark                                                      |
-| Use as reference                 | Icon panel                    | Keeps this drawing as the reference, so later drawings keep its composition                   |
-| Remove reference                 | Icon panel, or Icons view     | Drops the reference                                                                           |
-| Write subject from this drawing  | Icon panel                    | The describe model writes a subject; the Icons view shows it unsaved, beside the saved one    |
-| Save subject                     | Icons view, or `⌘Enter`       | Writes the subject to `aicon-studio.json`; the next run or redraw of the icon draws from it   |
-| Add icon                         | Icons view                    | Adds a drawn icon or a rotation to `aicon-studio.json`                                        |
-| Move up, down, to top, bottom    | Row menu, or the handle ⠿     | Orders the icons in `aicon-studio.json`                                                       |
-| Remove icon…                     | Row menu                      | Removes the icon and its reference, after asking                                              |
-| Flip                             | Icon panel, **Filled**        | A click switches the region under it between filled and white, and derives the fill           |
-| Undo last flip                   | Icon panel, or `⌘Z`, `Ctrl+Z` | Drops the newest flip of the icon and derives the fill                                        |
-| Reset flips                      | Icon panel                    | Clears the flips of the icon and derives the fill                                             |
-| Redraw                           | Icon panel                    | Draws the icon again into the set, with the set's prompt and the current reference            |
-| Complete set                     | Column menu                   | Draws every icon the set has no drawing of                                                    |
-| Adopt into `<target>`…           | Column menu                   | Copies the SVG files of the set into the target, after asking                                 |
-| New style from this prompt       | Column menu                   | Opens a new style with the prompt of the set                                                  |
-| Move left, Move right            | Column menu, or the handle ⠿  | Moves the set column; the order is kept in this browser                                       |
-| Hide column                      | Column menu, or **Columns**   | Hides the column; **Columns** shows it again                                                  |
-| Delete set…                      | Column menu                   | Deletes the set folder, after asking                                                          |
-| Save, Revert, Duplicate, Delete… | Styles view                   | Edits the files in `styles/`, with a preview of the prompt for one icon; Delete… asks first   |
+| Action                           | Where                        | Effect                                                                                        |
+| :------------------------------- | :--------------------------- | :-------------------------------------------------------------------------------------------- |
+| New run                          | Top bar                      | Draws every icon, or a test run of chosen icons, in each chosen style, after showing the cost |
+| New test run                     | Top bar                      | New run, preset to chosen icons                                                               |
+| Stop                             | Top bar, beside the job      | Starts no further drawing; the drawings in flight finish and are kept                         |
+| Settings                         | Top bar                      | The endpoint, key, models and prices                                                          |
+| Project                          | Top bar                      | Opens another project folder: one opened before, a typed path, or one chosen with **Browse…** |
+| Dark theme                       | Top bar                      | Switches the page between light and dark                                                      |
+| Use as reference                 | Icon panel                   | Keeps this drawing as the reference, so later drawings keep its composition                   |
+| Remove reference                 | Icon panel, or Icons view    | Drops the reference                                                                           |
+| Write subject from this drawing  | Icon panel                   | The describe model writes a subject; the Icons view shows it unsaved, beside the saved one    |
+| Save subject                     | Icons view, or `⌘Enter`      | Writes the subject to `aicon-studio.json`; the next run or redraw of the icon draws from it   |
+| Add icon                         | Icons view                   | Adds a drawn icon or a rotation to `aicon-studio.json`                                        |
+| Move up, down, to top, bottom    | Row menu, or the handle ⠿    | Orders the icons in `aicon-studio.json`                                                       |
+| Remove icon…                     | Row menu                     | Removes the icon and its reference, after asking                                              |
+| Flip                             | Icon panel, **Filled**       | A click switches the region under it between filled and white, and derives the fill           |
+| ↶ Undo last flip, ↷ Redo flip    | Icon panel, or `⌘Z`, `⇧⌘Z`   | Drops the newest flip of the icon or brings it back, and derives the fill                     |
+| Show flips                       | Icon panel                   | Shows or hides the dots that mark the flips                                                   |
+| Reset flips                      | Icon panel                   | Clears the flips of the icon and derives the fill                                             |
+| Redraw                           | Icon panel                   | Draws the icon again into the set, with the set's prompt and the current reference            |
+| Rephrase subject…                | Icon panel, or Job log       | The describe model rephrases the subject for a reason; saved, it redraws the failed icon      |
+| Rephrase…                        | Styles view                  | The describe model rephrases the prompt in the editor for a reason, unsaved                   |
+| Redraw all                       | Job log                      | Draws every icon of a group again, across sets                                                |
+| Complete set                     | Column menu                  | Draws every icon the set has no drawing of                                                    |
+| Adopt into `<target>`…           | Column menu                  | Copies the SVG files of the set into the target, after asking                                 |
+| New style from this prompt       | Column menu                  | Opens a new style with the prompt of the set                                                  |
+| Move left, Move right            | Column menu, or the handle ⠿ | Moves the set column; the order is kept in this browser                                       |
+| Hide column                      | Column menu, or **Columns**  | Hides the column; **Columns** shows it again                                                  |
+| Delete set…                      | Column menu                  | Deletes the set folder, after asking                                                          |
+| Save, Revert, Duplicate, Delete… | Styles view                  | Edits the files in `styles/`, with a preview of the prompt for one icon; Delete… asks first   |
 
 ---
 

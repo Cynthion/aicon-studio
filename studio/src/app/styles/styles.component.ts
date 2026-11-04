@@ -69,6 +69,7 @@ export class StylesComponent implements Unsaved {
     const model = this.model();
     return !!editing && (editing.isNew || model.name !== editing.name || model.prompt !== editing.prompt);
   });
+  protected readonly promptError = computed(() => stylePromptError(this.model().prompt));
   protected readonly stemOptions = computed(() =>
     this.state()
       .config.icons.filter(isDrawn)
@@ -131,6 +132,19 @@ export class StylesComponent implements Unsaved {
     if (editing) {
       this.open(editing);
     }
+  }
+
+  /** The describe model rephrases the prompt in the editor; the result lands there unsaved. */
+  protected rephrase(): void {
+    const { name, prompt } = this.model();
+    this.studio.rephrase({
+      kind: 'style',
+      name,
+      text: prompt,
+      reason: '',
+      work: [],
+      use: (rephrased) => this.model.update((model) => ({ ...model, prompt: rephrased }))
+    });
   }
 
   protected async remove(): Promise<void> {

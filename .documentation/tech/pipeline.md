@@ -9,7 +9,7 @@ How a subject becomes two SVG files, what a set records, and the HTTP API betwee
 | `src/cli.ts`      | `aicon-studio [project] [--port]`: resolves the project and serves the studio on the loopback |
 | `src/project.ts`  | The folder contract resolved into paths, and `aicon-studio.json` read and written             |
 | `src/settings.ts` | The user settings file: location, owner-only mode, the public view without the key            |
-| `src/pipeline.ts` | Runs, redraws, refills, the raster fill and describe                                          |
+| `src/pipeline.ts` | Runs, redraws, refills, the raster fill, describe and rephrase                                |
 | `src/server.ts`   | The HTTP server: the guard, the page, the files and the JSON API                              |
 | `studio/`         | The page, an Angular application built to `dist/studio/browser`, which talks to the API only  |
 
@@ -37,7 +37,21 @@ flowchart LR
 - **Request**: `images/generations` with the prompt, or `images/edits` with the prompt and the reference rasterized to a PNG. Both ask for one 1024 by 1024 PNG with a transparent background, at the run's quality.
 - **Drawing**: only outlines are drawn. Each is one image, traced by potrace into one path in a square `viewBox` with 2 of 24 units of padding on every side. The path carries no `fill`, `stroke`, `width` or `height`.
 - **Concurrency**: four icons at a time, through one Chromium.
-- **Failures**: a request is tried five times on network errors, rate limits, server errors and safety-filter blocks. A rate limit waits as long as its `retry-after` asks, a minute when it names none. Any other client error fails at once. An icon that is never drawn has no file in the set and is listed in `failed`; a failed redraw keeps the last drawing.
+- **Failures**: a refused request is told from its answer alone, never by vendor or model, and treated by its scope: a rate limit holds the job back, a cause of every drawing stops the job, a cause of one drawing fails its icon.
+
+| Answer                                                                                        | Cause         | Treatment                                                                                                    |
+| :-------------------------------------------------------------------------------------------- | :------------ | :----------------------------------------------------------------------------------------------------------- |
+| `429`, unless its code names a quota                                                          | none          | `waitingUntil` of the job: every request waits `retry-after`, a minute when it names none; no try is counted |
+| `402`, or an error code naming a quota or billing                                             | `quota`       | `halted` of the job, which stops                                                                             |
+| No answer, a timeout or a `5xx`                                                               | `unavailable` | Tried five times, waiting 5, 10, 15 and 20 s, then `halted`                                                  |
+| `401`, `403` or `404`                                                                         | `settings`    | `halted` of the job, which stops                                                                             |
+| A client error whose code or message speaks of moderation, safety, a content filter or policy | `safety`      | Tried twice, then `failures` of the set                                                                      |
+| Any other client error, or an answer without an image                                         | `other`       | `failures` of the set at once                                                                                |
+
+- **Quota Words**: only the error code names a quota. A rate limit's message can link a quota increase, as Azure's does, and stays a rate limit.
+- **Failed Icon**: an icon that is never drawn has no file in the set and is listed in `failed`; a failed redraw keeps the last drawing. Both record a failure in `failures`, until a drawing of the stem clears it. The message is the endpoint's own `message`, under `error` or at the top level of its answer.
+- **Halted Job**: the icons not drawn yet are neither drawn nor failed, as after a stop. The page lists them as **Not drawn** from the sets: every stem a set's `icons` or `failed` names that has no outline and no failure.
+- **Rephrase**: `chat/completions` with the describe model, the reason and either a style prompt or a subject with the prompt of its set. The fixed instructions keep the heading and `{subject}` of a style, and a subject one noun phrase of content; the page checks the answer before it is used.
 
 ### Example Run
 
@@ -118,9 +132,10 @@ Every set is a folder `runs/<yyyy-mm-dd-hhmm>/<style>/`. A run creates it with `
 | `prompt`          | The style prompt at the time of the run; a redraw uses it, not the style file |
 | `icons`           | The `stem` and `subject` of every drawn icon, and whether it was `referenced` |
 | `failed`          | The stems that were never drawn; they have no file in the set                 |
+| `failures`        | Per stem, the `cause` and `message` of its last failed drawing                |
 | `flips`           | Per stem, the points in `viewBox` units whose fill region is flipped          |
 
-A redraw clears the flips of that icon, because they point at regions of the old drawing.
+A redraw clears the flips of that icon, because they point at regions of the old drawing. A set without `failures` reads as having none.
 
 ---
 
@@ -148,8 +163,9 @@ The server listens on the loopback interface only. Every answer is JSON; a faile
 | `DELETE /api/references/<stem>`  | Removes the reference                                                                                                                                           |
 | `POST /api/runs`                 | Starts a run of known styles at a quality, of every drawn icon or of the drawn `stems` given, each once; needs complete settings                                |
 | `POST /api/stop`                 | Stops the running job: no further request starts or is tried again; a drawing whose request is answered is still written                                        |
-| `POST /api/redraw`               | Redraws stems of a set                                                                                                                                          |
+| `POST /api/redraw`               | Redraws the `work` given, `{ set, stem }` each, across sets                                                                                                     |
 | `POST /api/describe`             | Writes a subject from a drawing with the describe model                                                                                                         |
+| `POST /api/rephrase`             | Answers a style `prompt` rephrased for a `reason`, or the subject of the drawn `stem` rephrased for it, with the prompt of the `set` given; writes nothing      |
 | `PUT /api/flips`                 | Stores the flips of a stem in a set and derives its fill                                                                                                        |
 | `DELETE /api/sets/<run>/<style>` | Deletes a set, and its run folder when empty                                                                                                                    |
 | `POST /api/adopt`                | Copies every SVG file of a set into the target, creating it when missing                                                                                        |

@@ -1,0 +1,75 @@
+<studio-ui-dialog
+  #dialog
+  [headline]="headline"
+  (closed)="studio.dialog.set(undefined)">
+  <p class="hint">
+    @if (isSubject) {
+      The describe model rephrases the subject for your reason and keeps the symbol it names. The subject applies to the icon in every style. Nothing changes
+      until you save it.
+    } @else {
+      The describe model rephrases the style for your reason and keeps its look. Nothing changes until you take the result.
+    }
+  </p>
+  <form
+    class="fields"
+    [formRoot]="form">
+    <formidable-field-decorator>
+      <formidable-textarea-field [formField]="form.reason" />
+      <div formidableFieldLabel>Reason</div>
+      <div formidableFieldHint>What the new wording must change. After a failed drawing it starts with the message of the endpoint; change it to say more.</div>
+    </formidable-field-decorator>
+    <button
+      type="button"
+      class="rephrase"
+      [class.primary]="!rephrased()"
+      [disabled]="rephrasing() || !model().reason.trim()"
+      [title]="model().reason.trim() ? '' : 'Give a reason first'"
+      (click)="rephrase()">
+      {{ rephrasing() ? 'Rephrasing…' : rephrased() ? 'Rephrase again' : 'Rephrase' }}
+    </button>
+    @if (rephrased()) {
+      <formidable-field-decorator>
+        <formidable-textarea-field
+          [class.prompt]="!isSubject"
+          [formField]="form.text" />
+        <div formidableFieldLabel>{{ isSubject ? 'Rephrased subject' : 'Rephrased prompt' }}</div>
+        <div formidableFieldHint>
+          @if (isSubject) {
+            Review it and change what you like. Before: {{ target.text }}
+          } @else {
+            Review it and change what you like. It keeps a # heading and {{ '{subject}' }}.
+          }
+        </div>
+      </formidable-field-decorator>
+      @if (!isSubject) {
+        <details>
+          <summary>Prompt before</summary>
+          <pre>{{ target.text }}</pre>
+        </details>
+      }
+    }
+    @if (error(); as error) {
+      <p
+        class="error"
+        role="alert">
+        {{ error }}
+      </p>
+    }
+    <div class="buttons">
+      <button
+        type="button"
+        (click)="dialog.close()">
+        Cancel
+      </button>
+      @if (rephrased()) {
+        <button
+          type="submit"
+          class="primary"
+          [disabled]="form().submitting() || (isSubject && target.work.length > 0 && studio.busy())"
+          [title]="isSubject && target.work.length && studio.busy() ? 'Wait for the drawing job' : ''">
+          {{ applyLabel() }}
+        </button>
+      }
+    </div>
+  </form>
+</studio-ui-dialog>

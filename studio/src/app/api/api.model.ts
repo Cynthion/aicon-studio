@@ -23,6 +23,12 @@ export interface Style {
   name: string;
   prompt: string;
 }
+/** Why a drawing failed, whatever the endpoint: `safety` and `other` fail its icon, the rest stop its job. */
+export type Cause = 'safety' | 'other' | 'quota' | 'settings' | 'unavailable';
+export interface Failure {
+  cause: Cause;
+  message: string;
+}
 /** `_run.json` of a set. */
 export interface SetInfo {
   run: string;
@@ -32,6 +38,7 @@ export interface SetInfo {
   prompt: string;
   icons: { stem: string; subject: string; referenced: boolean }[];
   failed: string[];
+  failures: Record<string, Failure>;
   flips: Record<string, [number, number][]>;
 }
 /** A set as the state lists it: `<run>/<style>`, its record and its files. */
@@ -51,6 +58,9 @@ export interface Job {
   drawing: string[];
   sets: string[];
   stopped: boolean;
+  /** Until when, in epoch milliseconds, a rate limit holds the job back. */
+  waitingUntil?: number;
+  halted?: Failure;
 }
 export interface PublicSettings {
   baseUrl: string;

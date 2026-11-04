@@ -37,14 +37,14 @@ The command fails with `no aicon-studio.json in <folder>` when the folder is not
 
 The endpoint is entered once, under **Settings** in the top bar. It is stored per user, outside any project, so it stays when another project is opened.
 
-| Field                                    | Holds                                                                                            |
-| :--------------------------------------- | :----------------------------------------------------------------------------------------------- |
-| **Base URL of an OpenAI-compatible API** | The `/v1` base URL, such as OpenAI's or an Azure AI Foundry project's                            |
-| **API key**                              | The key of that API; shown never again, left empty to keep the stored one                        |
-| **Image model**                          | The image model or deployment that draws; a referenced icon is drawn as an edit of its reference |
-| **Describe model**                       | A chat model or deployment with image input, which writes a subject from a drawing               |
-| **Price per plain image, in $**          | The price of one image drawn from its subject alone, optional                                    |
-| **Price per referenced image, in $**     | The price of one image drawn with a reference, optional                                          |
+| Field                                    | Holds                                                                                                    |
+| :--------------------------------------- | :------------------------------------------------------------------------------------------------------- |
+| **Base URL of an OpenAI-compatible API** | The `/v1` base URL, such as OpenAI's or an Azure AI Foundry project's                                    |
+| **API key**                              | The key of that API; shown never again, left empty to keep the stored one                                |
+| **Image model**                          | The image model or deployment that draws; a referenced icon is drawn as an edit of its reference         |
+| **Describe model**                       | A chat model or deployment with image input, which writes a subject from a drawing and rephrases a style |
+| **Price per plain image, in $**          | The price of one image drawn from its subject alone, optional                                            |
+| **Price per referenced image, in $**     | The price of one image drawn with a reference, optional                                                  |
 
 > **Note:** The settings file is `$XDG_CONFIG_HOME/aicon-studio/settings.json`, under `~/.config` when the variable is unset. It is readable by its owner only.
 

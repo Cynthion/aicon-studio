@@ -314,3 +314,32 @@ export const stemError = (stem: string, icons: readonly Icon[]): string | undefi
   }
   return icons.some((icon) => icon.stem === stem) ? `An icon ${stem} exists already` : undefined;
 };
+
+/** The drawn icons of a pasted list, one `stem: subject` per line, or why a line cannot be added. */
+export const parseIcons = (text: string, icons: readonly Icon[]): { icons: Drawn[]; error?: string } => {
+  const added: Drawn[] = [];
+  const lines = text.split('\n');
+  for (const [i, line] of lines.entries()) {
+    if (!line.trim()) {
+      continue;
+    }
+    const parts = line.split(':');
+    const [stem = '', subject = ''] = parts.map((part) => part.trim());
+    const error =
+      parts.length !== 2
+        ? 'Write stem: subject, with one colon'
+        : (stemError(stem, [...icons, ...added]) ??
+          (subject ? undefined : 'Describe the symbol to draw, such as a gear'));
+    if (error) {
+      return { icons: added, error: `Line ${i + 1}: ${error}` };
+    }
+    added.push({ stem, subject });
+  }
+  return added.length ? { icons: added } : { icons: [], error: 'Paste one stem: subject per line' };
+};
+
+/** The columns that hold the outline or the fill of a stem. */
+export const filesOf = (state: State, stem: string): Column[] =>
+  columns(state, []).filter(
+    (column) => column.files[stem] !== undefined || column.files[`${stem}-filled`] !== undefined
+  );

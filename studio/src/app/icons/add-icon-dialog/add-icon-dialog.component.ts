@@ -10,7 +10,7 @@ import {
   TextareaField
 } from '@cynthion/ngx-formidable';
 import { ApiService } from '../../api/api.service';
-import { isDrawn, messageOf, stemError } from '../../api/studio.helpers';
+import { isDrawn, messageOf, parseIcons, stemError } from '../../api/studio.helpers';
 import { StudioService } from '../../api/studio.service';
 import { DialogComponent } from '../../ui/dialog/dialog.component';
 import { ToastService } from '../../ui/toast/toast.service';
@@ -21,15 +21,17 @@ interface IconModel {
   subject: string;
   from: string | null;
   rotate: string | null;
+  list: string;
 }
 
 const KINDS = [
   { value: 'drawn', label: 'Drawn from a subject' },
-  { value: 'rotation', label: 'Rotation of a drawn icon' }
+  { value: 'rotation', label: 'Rotation of a drawn icon' },
+  { value: 'list', label: 'Several, pasted as a list' }
 ];
 const ANGLES = ['90', '180', '270'].map((value) => ({ value, label: `${value}°` }));
 
-/** Adds an icon to aicon-studio.json: drawn from a subject, or a rotation of a drawn icon. */
+/** Adds an icon to aicon-studio.json: drawn from a subject, a rotation of a drawn icon, or several drawn icons pasted as a list. */
 @Component({
   selector: 'studio-add-icon-dialog',
   templateUrl: './add-icon-dialog.component.html',
@@ -63,16 +65,36 @@ export class AddIconDialogComponent {
       .map(({ stem }) => ({ value: stem }))
   );
   protected readonly error = signal<string | undefined>(undefined);
-  protected readonly model = signal<IconModel>({ kind: 'drawn', stem: '', subject: '', from: null, rotate: '90' });
+  protected readonly model = signal<IconModel>({
+    kind: 'drawn',
+    stem: '',
+    subject: '',
+    from: null,
+    rotate: '90',
+    list: ''
+  });
   protected readonly rotation = computed(() => this.model().kind === 'rotation');
+  protected readonly several = computed(() => this.model().kind === 'list');
+  protected readonly parsed = computed(() => parseIcons(this.model().list, this.icons()));
+  protected readonly submitLabel = computed(() => {
+    const count = this.parsed().error ? 0 : this.parsed().icons.length;
+    return this.several() && count ? `Add ${count} icon${count > 1 ? 's' : ''}` : 'Add icon';
+  });
   protected readonly form = form(
     this.model,
     schema<IconModel>((path) => {
       validate(path.stem, ({ value }) => {
-        const message = stemError(value(), this.icons());
+        const message = this.several() ? undefined : stemError(value(), this.icons());
         return message ? { kind: 'stem', message } : undefined;
       });
-      required(path.subject, { message: 'Describe the symbol to draw, such as a gear', when: () => !this.rotation() });
+      validate(path.list, () => {
+        const message = this.several() ? this.parsed().error : undefined;
+        return message ? { kind: 'list', message } : undefined;
+      });
+      required(path.subject, {
+        message: 'Describe the symbol to draw, such as a gear',
+        when: () => this.model().kind === 'drawn'
+      });
       required(path.from, { message: 'Choose the icon to rotate', when: () => this.rotation() });
       required(path.rotate, { message: 'Choose the angle', when: () => this.rotation() });
     }),
@@ -81,23 +103,30 @@ export class AddIconDialogComponent {
 
   private async add(): Promise<undefined> {
     const { stem, subject, from, rotate } = this.model();
+    const { icons } = this.parsed();
     this.error.set(undefined);
     try {
       await this.api.send(
         'POST',
         '/api/icons',
-        this.rotation() ? { stem, from, rotate: Number(rotate) } : { stem, subject: subject.trim() }
+        this.several()
+          ? { icons }
+          : this.rotation()
+            ? { stem, from, rotate: Number(rotate) }
+            : { stem, subject: subject.trim() }
       );
     } catch (e) {
       this.error.set(messageOf(e));
       return;
     }
     this.toasts.info(
-      this.rotation()
-        ? `Added ${stem}, drawn in every set that holds ${from}`
-        : `Added ${stem}: the next run draws it, Complete set draws it into a set`
+      this.several()
+        ? `Added ${icons.length} icons: the next run draws them, Complete set draws them into a set`
+        : this.rotation()
+          ? `Added ${stem}, drawn in every set that holds ${from}`
+          : `Added ${stem}: the next run draws it, Complete set draws it into a set`
     );
-    this.studio.reveal.set(stem);
+    this.studio.reveal.set(this.several() ? icons[0].stem : stem);
     await this.studio.reload();
     this.dialog().close('added');
   }

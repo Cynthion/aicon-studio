@@ -9,13 +9,22 @@ import { ItemMenuComponent, type MenuEntry } from '../ui/item-menu/item-menu.com
 import { focusMenu } from '../ui/item-menu/item-menu.helpers';
 import { PairComponent } from '../ui/pair/pair.component';
 import { AddIconDialogComponent } from './add-icon-dialog/add-icon-dialog.component';
+import { RenameIconDialogComponent } from './rename-icon-dialog/rename-icon-dialog.component';
 
-/** Every icon with its current file, stem, subject and reference. Icons are added, ordered, edited and removed here. */
+/** Every icon with its current file, stem, subject and reference. Icons are added, ordered, edited, renamed and removed here. */
 @Component({
   selector: 'studio-icons',
   templateUrl: './icons.component.html',
   styleUrl: './icons.component.scss',
-  imports: [AddIconDialogComponent, CdkDrag, CdkDragHandle, CdkDropList, ItemMenuComponent, PairComponent]
+  imports: [
+    AddIconDialogComponent,
+    CdkDrag,
+    CdkDragHandle,
+    CdkDropList,
+    ItemMenuComponent,
+    PairComponent,
+    RenameIconDialogComponent
+  ]
 })
 export class IconsComponent implements Unsaved {
   protected readonly studio = inject(StudioService);
@@ -36,6 +45,8 @@ export class IconsComponent implements Unsaved {
   /** Icons move in the whole list only: not while a filter hides some, nor while a job draws. */
   protected readonly canMove = computed(() => !this.studio.search() && !this.studio.busy());
   protected readonly announcement = signal('');
+  /** The icon the rename dialog is open for. */
+  protected readonly renaming = signal<Icon | undefined>(undefined);
 
   constructor() {
     // a described or added icon's subject field takes the focus once its row shows
@@ -67,17 +78,21 @@ export class IconsComponent implements Unsaved {
       { value: 'down', label: 'Move down', disabled: fixed || index === last },
       { value: 'top', label: 'Move to top', disabled: fixed || index === 0 },
       { value: 'bottom', label: 'Move to bottom', disabled: fixed || index === last },
+      { value: 'rename', label: 'Rename icon…', separator: true, disabled: this.studio.busy() },
       {
         value: 'remove',
         label: rotations.length ? `Remove icon… (remove ${rotations.join(', ')} first)` : 'Remove icon…',
         danger: true,
-        separator: true,
         disabled: this.studio.busy() || rotations.length > 0
       }
     ];
   }
 
-  protected act(icon: Icon, index: number, action: string): Promise<void> {
+  protected act(icon: Icon, index: number, action: string): Promise<void> | undefined {
+    if (action === 'rename') {
+      this.renaming.set(icon);
+      return undefined;
+    }
     const to = { up: index - 1, down: index + 1, top: 0, bottom: this.icons().length - 1 }[action];
     return to === undefined ? this.remove(icon) : this.move(index, to);
   }

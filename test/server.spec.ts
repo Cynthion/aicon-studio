@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import type * as http from 'node:http';
 import * as path from 'node:path';
-import { RUN_FILE, type SetInfo } from '../src/pipeline.ts';
+import { RUN_FILE, type SetInfo, updateSet } from '../src/pipeline.ts';
 import { CONFIG_FILE, type Config, type Project } from '../src/project.ts';
 import { createServer } from '../src/server.ts';
 import { readSettings, writeSettings, type Settings } from '../src/settings.ts';
@@ -338,6 +338,151 @@ describe('icons', () => {
     );
 
     expect([replies.map((r) => r.status), config().icons]).toEqual([[400, 400, 400], ICONS]);
+  });
+
+  it('appends a list of drawn icons in its order, trimmed', async () => {
+    await api('POST', '/api/icons', {
+      icons: [
+        { stem: 'gear', subject: ' a gear ' },
+        { stem: 'bell', subject: 'a bell' }
+      ]
+    });
+
+    expect(config().icons.slice(-2)).toEqual([
+      { stem: 'gear', subject: 'a gear' },
+      { stem: 'bell', subject: 'a bell' }
+    ]);
+  });
+
+  it('refuses the whole list when one entry is invalid', async () => {
+    const reply = await api('POST', '/api/icons', {
+      icons: [
+        { stem: 'gear', subject: 'a gear' },
+        { stem: 'home', subject: 'x' }
+      ]
+    });
+
+    expect([reply.status, reply.json['error'], config().icons]).toEqual([400, 'home exists', ICONS]);
+  });
+
+  it('refuses a stem twice in the list', async () => {
+    const reply = await api('POST', '/api/icons', {
+      icons: [
+        { stem: 'gear', subject: 'a' },
+        { stem: 'gear', subject: 'b' }
+      ]
+    });
+
+    expect([reply.status, reply.json['error']]).toEqual([400, 'gear exists']);
+  });
+});
+
+describe('rename', () => {
+  beforeEach(() => start());
+  const config = (): Config => readJson<Config>(path.join(dir, CONFIG_FILE));
+  const targetFile = (file: string): string => path.join(project.target, file);
+  const exist = (files: string[]): boolean[] => files.map((file) => fs.existsSync(file));
+
+  it('renames the entry in aicon-studio.json, in place', async () => {
+    await api('PUT', '/api/icons/home', { stem: 'house' });
+
+    expect(config().icons).toEqual([{ stem: 'house', subject: 'a house' }, ...ICONS.slice(1)]);
+  });
+
+  it('renames the from of its rotations', async () => {
+    await api('PUT', '/api/icons/chevron-right', { stem: 'chevron-east' });
+
+    expect(config().icons.at(-1)).toEqual({ stem: 'chevron-down', from: 'chevron-east', rotate: 90 });
+  });
+
+  it('renames its reference', async () => {
+    await api('PUT', '/api/references/home', { set: SET });
+    await api('PUT', '/api/icons/home', { stem: 'house' });
+
+    expect(exist([path.join(project.references, 'house.svg'), path.join(project.references, 'home.svg')])).toEqual([
+      true,
+      false
+    ]);
+  });
+
+  it('renames its outline and fill in every set', async () => {
+    const outline = read(setFile('home.svg'));
+    const fill = read(setFile('home-filled.svg'));
+    await api('PUT', '/api/icons/home', { stem: 'house' });
+
+    expect([
+      read(setFile('house.svg')) === outline,
+      read(setFile('house-filled.svg')) === fill,
+      ...exist([setFile('home.svg'), setFile('home-filled.svg')])
+    ]).toEqual([true, true, false, false]);
+  });
+
+  it('renames its stem in the record of every set', async () => {
+    const failure = { cause: 'safety' as const, message: 'blocked' };
+    updateSet(project, SET, (info) => ({ ...info, failures: { home: failure }, flips: { home: [FLIP] } }));
+    await api('PUT', '/api/icons/home', { stem: 'house' });
+    const info = setInfo();
+
+    expect([info.icons.map((icon) => icon.stem), info.failures, info.flips]).toEqual([
+      ['house', 'search', 'chevron-right'],
+      { house: failure },
+      { house: [FLIP] }
+    ]);
+  });
+
+  it('renames its outline and fill in the target', async () => {
+    await api('PUT', '/api/icons/home', { stem: 'house' });
+
+    expect(
+      exist([
+        targetFile('house.svg'),
+        targetFile('house-filled.svg'),
+        targetFile('home.svg'),
+        targetFile('home-filled.svg')
+      ])
+    ).toEqual([true, true, false, false]);
+  });
+
+  it('overwrites the leftovers of the new stem', async () => {
+    fs.copyFileSync(path.join(FIXTURES, 'set', 'settings.svg'), setFile('settings.svg'));
+    updateSet(project, SET, (info) => ({
+      ...info,
+      icons: [...info.icons, { stem: 'settings', subject: 'a gear', referenced: false }]
+    }));
+    const outline = read(setFile('home.svg'));
+    await api('PUT', '/api/icons/home', { stem: 'settings' });
+
+    expect([
+      read(setFile('settings.svg')) === outline,
+      setInfo().icons.filter((icon) => icon.stem === 'settings')
+    ]).toEqual([true, [{ stem: 'settings', subject: 'a house', referenced: false }]]);
+  });
+
+  it("renames a rotation's own files", async () => {
+    await api('PUT', '/api/icons/chevron-down', { stem: 'chevron-south' });
+
+    expect([
+      config().icons.at(-1),
+      ...exist([setFile('chevron-south.svg'), setFile('chevron-south-filled.svg'), setFile('chevron-down.svg')])
+    ]).toEqual([{ stem: 'chevron-south', from: 'chevron-right', rotate: 90 }, true, true, false]);
+  });
+
+  it('refuses a new stem that exists', async () => {
+    const reply = await api('PUT', '/api/icons/home', { stem: 'search' });
+
+    expect([reply.status, config().icons, fs.existsSync(setFile('home.svg'))]).toEqual([400, ICONS, true]);
+  });
+
+  it('refuses a new stem outside letters, digits, dashes and underscores, or naming a fill', async () => {
+    const replies = await Promise.all(['a b', 'house-filled'].map((stem) => api('PUT', '/api/icons/home', { stem })));
+
+    expect(replies.map((r) => r.status)).toEqual([400, 400]);
+  });
+
+  it('refuses to rename an unknown icon', async () => {
+    const reply = await api('PUT', '/api/icons/nope', { stem: 'x' });
+
+    expect(reply.status).toBe(400);
   });
 });
 

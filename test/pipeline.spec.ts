@@ -560,17 +560,18 @@ describe('stop', () => {
 });
 
 describe('icons', () => {
-  it('refuses to add, remove or reorder while a job runs', async () => {
+  it('refuses to add, rename, remove or reorder while a job runs', async () => {
     stub.delayMs = 1500;
     const studio = await serve(HOME_ONLY);
     await request(studio.port, 'POST', '/api/runs', { body: { styles: ['soft'], quality: 'medium' } });
     const replies = [
       await request(studio.port, 'POST', '/api/icons', { body: { stem: 'gear', subject: 'a gear' } }),
+      await request(studio.port, 'PUT', '/api/icons/home', { body: { stem: 'house' } }),
       await request(studio.port, 'DELETE', '/api/icons/home'),
       await request(studio.port, 'PUT', '/api/icons', { body: { order: ['home'] } })
     ];
     await studio.done();
 
-    expect(replies.map((r) => r.status)).toEqual([409, 409, 409]);
+    expect(replies.map((r) => r.status)).toEqual([409, 409, 409, 409]);
   });
 });

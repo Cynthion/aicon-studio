@@ -70,6 +70,13 @@ const checkPrompt = (prompt: unknown): void => {
   check((prompt as string).trim().startsWith('# '), 'a style prompt starts with a # heading');
 };
 
+/** Refuses a stem that cannot name a new icon: not a file name, a fill, or taken by one of `taken`. */
+const checkStem = (stem: unknown, taken: readonly { stem: unknown }[]): void => {
+  check(typeof stem === 'string' && NAME.test(stem), 'a stem takes letters, digits, dashes and underscores');
+  check(!(stem as string).endsWith('-filled'), 'a stem ending in -filled names the fill of another icon');
+  check(!taken.some((icon) => icon.stem === stem), `${String(stem)} exists`);
+};
+
 const read = (file: string): string => (fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '');
 
 /** A native folder picker: the command, its arguments, and the exit code of a cancelled dialog. */
@@ -327,20 +334,27 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
     [
       'POST',
       /^\/api\/icons$/,
-      (_, { stem, subject, from, rotate }) => {
+      (_, { stem, subject, from, rotate, icons: list }) => {
         busy();
         const icons = readConfig(project).icons;
-        check(typeof stem === 'string' && NAME.test(stem), 'a stem takes letters, digits, dashes and underscores');
-        check(!(stem as string).endsWith('-filled'), 'a stem ending in -filled names the fill of another icon');
-        check(!icons.some((icon) => icon.stem === stem), `${String(stem)} exists`);
         if (from === undefined) {
-          check(typeof subject === 'string' && subject.trim(), 'a subject must not be empty');
+          // one drawn icon, or a pasted list of them: all or none
+          const added = (list ?? [{ stem, subject }]) as { stem: unknown; subject: unknown }[];
+          check(Array.isArray(added) && added.length, 'add at least one icon');
+          added.forEach((icon, i) => {
+            checkStem(icon.stem, [...icons, ...added.slice(0, i)]);
+            check(typeof icon.subject === 'string' && icon.subject.trim(), 'a subject must not be empty');
+          });
           updateConfig(project, (config) => ({
             ...config,
-            icons: [...config.icons, { stem: stem as string, subject: (subject as string).trim() }]
+            icons: [
+              ...config.icons,
+              ...added.map((icon) => ({ stem: icon.stem as string, subject: (icon.subject as string).trim() }))
+            ]
           }));
           return;
         }
+        checkStem(stem, icons);
         check(
           icons.some((icon) => icon.stem === from && isDrawn(icon)),
           'a rotation turns a drawn icon of aicon-studio.json'
@@ -366,6 +380,55 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
         updateConfig(project, (config) => ({ ...config, icons: config.icons.filter((icon) => icon.stem !== stem) }));
         // the sets and the target keep their files: a set records a run, the target what was adopted
         fs.rmSync(path.join(project.references, `${stem}.svg`), { force: true });
+      }
+    ],
+    [
+      'PUT',
+      /^\/api\/icons\/([\w-]+)$/,
+      ([stem], { stem: to }) => {
+        busy();
+        const icons = readConfig(project).icons;
+        check(
+          icons.some((icon) => icon.stem === stem),
+          `unknown icon: ${stem}`
+        );
+        checkStem(to, icons);
+        const name = (s: string): string => (s === stem ? (to as string) : s);
+        const rekey = <T>(record: Record<string, T>): Record<string, T> =>
+          Object.fromEntries(
+            Object.entries(record)
+              .filter(([s]) => s !== to)
+              .map(([s, v]) => [name(s), v])
+          );
+        updateConfig(project, (config) => ({
+          ...config,
+          icons: config.icons.map((icon) =>
+            isDrawn(icon)
+              ? { ...icon, stem: name(icon.stem) }
+              : { ...icon, stem: name(icon.stem), from: name(icon.from) }
+          )
+        }));
+        // the files of the new stem, leftovers of a removed icon, are overwritten; the page warns first
+        const move = (dir: string, suffix = ''): void => {
+          const file = path.join(dir, `${stem}${suffix}.svg`);
+          if (fs.existsSync(file)) {
+            fs.renameSync(file, path.join(dir, `${to as string}${suffix}.svg`));
+          }
+        };
+        move(project.references);
+        for (const dir of [project.target, ...sets(project).map((set) => setDir(project, set))]) {
+          move(dir);
+          move(dir, '-filled');
+        }
+        for (const set of sets(project)) {
+          updateSet(project, set, (info) => ({
+            ...info,
+            icons: info.icons.filter((icon) => icon.stem !== to).map((icon) => ({ ...icon, stem: name(icon.stem) })),
+            failed: info.failed.filter((s) => s !== to).map(name),
+            failures: rekey(info.failures),
+            flips: rekey(info.flips)
+          }));
+        }
       }
     ],
     [

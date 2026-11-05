@@ -85,3 +85,8 @@ export interface State {
   settings: PublicSettings;
   job?: Job;
 }
+/** The state while no project is open: the folder the studio was started over. */
+export interface NoProject {
+  project: null;
+  folder: string;
+}

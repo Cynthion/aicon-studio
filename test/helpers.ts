@@ -18,7 +18,7 @@ import { writeSettings, type Settings } from '../src/settings.ts';
 export const FIXTURES = fileURLToPath(new URL('./fixtures/', import.meta.url));
 export const EXAMPLE = fileURLToPath(new URL('../example/', import.meta.url));
 export const SOFT_PROMPT = fs.readFileSync(path.join(EXAMPLE, 'styles', 'soft.md'), 'utf8').trim();
-export const SHARP_PROMPT = fs.readFileSync(path.join(EXAMPLE, 'styles', 'sharp.md'), 'utf8').trim();
+export const BAUHAUS_PROMPT = fs.readFileSync(path.join(EXAMPLE, 'styles', 'bauhaus.md'), 'utf8').trim();
 
 /** The icons of the fixture project: three drawn, one rotation. */
 export const ICONS: (Drawn | Rotated)[] = [

@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { type Failure, newJob, readSet, startRun, type Job } from '../src/pipeline.ts';
 import type { Project } from '../src/project.ts';
 import type { Settings } from '../src/settings.ts';
-import { close, ICONS, listen, makeProject, SHARP_PROMPT, SOFT_PROMPT } from './helpers.ts';
+import { close, ICONS, listen, makeProject, BAUHAUS_PROMPT, SOFT_PROMPT } from './helpers.ts';
 import { type Answer, startStub, type Stub } from './stub.ts';
 
 const HOME_ONLY = [{ stem: 'home', subject: 'a house' }];
@@ -83,10 +83,10 @@ describe.concurrent('failed drawings', { timeout: 90_000 }, () => {
     const drawn = ICONS.filter((icon) => 'subject' in icon);
     const { project }: { project: Project } = makeProject({
       icons: drawn,
-      styles: { soft: SOFT_PROMPT, sharp: SHARP_PROMPT },
+      styles: { soft: SOFT_PROMPT, bauhaus: BAUHAUS_PROMPT },
       targetFiles: []
     });
-    await startRun(project, settingsAt(stub.url), ['soft', 'sharp'], 'medium', newJob());
+    await startRun(project, settingsAt(stub.url), ['soft', 'bauhaus'], 'medium', newJob());
     await stub.close();
     const [first, ...rest] = stub.requests;
 

@@ -74,6 +74,16 @@
 <main>
   @if (studio.state()) {
     <router-outlet />
+  } @else if (studio.folder()) {
+    <div class="card empty">
+      <p>No project is open. A project is a folder that holds aicon-studio.json, usually inside the repository whose icons it draws.</p>
+      <button
+        type="button"
+        class="primary"
+        (click)="studio.dialog.set('project')">
+        Project
+      </button>
+    </div>
   }
 </main>
 @switch (studio.dialog()) {

@@ -26,7 +26,7 @@ import {
   request,
   runName,
   SET_FILES,
-  SHARP_PROMPT,
+  BAUHAUS_PROMPT,
   SOFT_PROMPT
 } from './helpers.ts';
 import { startStub, type Stub } from './stub.ts';
@@ -41,7 +41,7 @@ let project: Project;
 let settings: Settings;
 
 const run = async (styles = ['soft'], icons: (Drawn | Rotated)[] = HOME_ONLY): Promise<string> => {
-  ({ project } = makeProject({ icons, styles: { soft: SOFT_PROMPT, sharp: SHARP_PROMPT }, targetFiles: [] }));
+  ({ project } = makeProject({ icons, styles: { soft: SOFT_PROMPT, bauhaus: BAUHAUS_PROMPT }, targetFiles: [] }));
   const job = newJob();
   await startRun(project, settings, styles, 'medium', job);
   return job.sets[0];
@@ -49,11 +49,11 @@ const run = async (styles = ['soft'], icons: (Drawn | Rotated)[] = HOME_ONLY): P
 const runBoth = async (): Promise<string[]> => {
   ({ project } = makeProject({
     icons: HOME_ONLY,
-    styles: { soft: SOFT_PROMPT, sharp: SHARP_PROMPT },
+    styles: { soft: SOFT_PROMPT, bauhaus: BAUHAUS_PROMPT },
     targetFiles: []
   }));
   const job = newJob();
-  await startRun(project, settings, ['soft', 'sharp'], 'medium', job);
+  await startRun(project, settings, ['soft', 'bauhaus'], 'medium', job);
   return job.sets;
 };
 const setPath = (set: string, file: string): string => path.join(project.runs, ...set.split('/'), file);
@@ -77,9 +77,9 @@ afterEach(async () => {
 
 describe('startRun', () => {
   it('draws every icon of every chosen style into its own set', async () => {
-    ({ project } = makeProject({ styles: { soft: SOFT_PROMPT, sharp: SHARP_PROMPT }, targetFiles: [] }));
+    ({ project } = makeProject({ styles: { soft: SOFT_PROMPT, bauhaus: BAUHAUS_PROMPT }, targetFiles: [] }));
     const job = newJob();
-    await startRun(project, settings, ['soft', 'sharp'], 'medium', job);
+    await startRun(project, settings, ['soft', 'bauhaus'], 'medium', job);
 
     const expected = [RUN_FILE, ...SET_FILES.map((f) => `${f}.svg`)].sort();
     expect([job.sets.map((set) => fs.readdirSync(setPath(set, '')).sort()), job.done, job.failed]).toEqual([
@@ -272,7 +272,7 @@ describe('redraw', () => {
   });
 
   it('redraws across sets', async () => {
-    const [soft, sharp] = await runBoth();
+    const [soft, bauhaus] = await runBoth();
     const job = newJob();
     stub.requests.length = 0;
     await redraw(
@@ -280,14 +280,14 @@ describe('redraw', () => {
       settings,
       [
         { set: soft, stem: 'home' },
-        { set: sharp, stem: 'home' }
+        { set: bauhaus, stem: 'home' }
       ],
       job
     );
 
     expect([stub.requests.map((r) => r.body['prompt']).sort(), job.sets]).toEqual([
-      [HOME_PROMPT, SHARP_PROMPT.replaceAll('{subject}', 'a house')].sort(),
-      [soft, sharp]
+      [HOME_PROMPT, BAUHAUS_PROMPT.replaceAll('{subject}', 'a house')].sort(),
+      [soft, bauhaus]
     ]);
   });
 
@@ -303,7 +303,7 @@ describe('redraw', () => {
   it('runs one job at a time', async () => {
     stub.delayMs = 1500;
     ({ project } = makeProject({ icons: HOME_ONLY, targetFiles: [] }));
-    const server = createServer(project, makeSettingsFile(settings));
+    const server = createServer(project.dir, makeSettingsFile(settings));
     const port = await listen(server);
     const started = await request(port, 'POST', '/api/runs', { body: { styles: ['soft'], quality: 'medium' } });
     const set = ((await request(port, 'GET', '/api/state')).json['sets'] as { set: string }[])[0].set;
@@ -376,7 +376,7 @@ describe('project', () => {
   it('refuses a switch while a job runs', async () => {
     stub.delayMs = 1500;
     ({ project } = makeProject({ icons: HOME_ONLY, targetFiles: [] }));
-    const server = createServer(project, makeSettingsFile(settings));
+    const server = createServer(project.dir, makeSettingsFile(settings));
     const port = await listen(server);
     await request(port, 'POST', '/api/runs', { body: RUN });
     const switched = await request(port, 'PUT', '/api/project', { body: { dir: makeProject().dir } });
@@ -389,7 +389,7 @@ describe('project', () => {
   it('refuses to create a project while a job runs', async () => {
     stub.delayMs = 1500;
     ({ project } = makeProject({ icons: HOME_ONLY, targetFiles: [] }));
-    const server = createServer(project, makeSettingsFile(settings));
+    const server = createServer(project.dir, makeSettingsFile(settings));
     const port = await listen(server);
     await request(port, 'POST', '/api/runs', { body: RUN });
     const created = await request(port, 'POST', '/api/project', { body: { dir: path.join(makeProject().dir, 'new') } });
@@ -401,7 +401,7 @@ describe('project', () => {
 
   it('forgets the job of the previous project', async () => {
     ({ project } = makeProject({ icons: HOME_ONLY, targetFiles: [] }));
-    const server = createServer(project, makeSettingsFile(settings));
+    const server = createServer(project.dir, makeSettingsFile(settings));
     const port = await listen(server);
     await request(port, 'POST', '/api/runs', { body: RUN });
     await settled(port);
@@ -416,7 +416,7 @@ describe('project', () => {
 /** A studio over a project of `icons`, listening; `done` waits out the job and closes it. */
 const serve = async (icons: (Drawn | Rotated)[]): Promise<{ port: number; done: () => Promise<void> }> => {
   ({ project } = makeProject({ icons, targetFiles: [] }));
-  const server = createServer(project, makeSettingsFile(settings));
+  const server = createServer(project.dir, makeSettingsFile(settings));
   const port = await listen(server);
   return {
     port,

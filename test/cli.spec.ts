@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import * as fs from 'node:fs';
 import * as net from 'node:net';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,6 +37,14 @@ const studio = (
     child.on('exit', done);
   });
 
+/** Holds `port` for the spec, or leaves it to whatever holds it already. */
+const hold = (port: number): Promise<net.Server | undefined> =>
+  new Promise((resolve) => {
+    const holder = net.createServer();
+    holder.once('error', () => resolve(undefined));
+    holder.listen(port, '127.0.0.1', () => resolve(holder));
+  });
+
 const stop = (child: ChildProcess): Promise<void> =>
   new Promise((resolve) => {
     if (child.exitCode !== null) {
@@ -62,11 +71,24 @@ describe('aicon-studio', () => {
     expect((reply.json['config'] as { target: string }).target).toBe('./icons');
   });
 
-  it('fails clearly without aicon-studio.json', async () => {
+  it('starts without a project in a folder without aicon-studio.json', async () => {
     const dir = tmpDir();
+    const port = await freePort();
+    const { child, stdout } = await studio([dir, '--port', String(port)], ROOT);
+    const reply = await request(port, 'GET', '/api/state').finally(() => stop(child));
+
+    expect([stdout.trim(), reply.json]).toEqual([
+      `Aicon Studio on http://127.0.0.1:${port}`,
+      { project: null, folder: dir }
+    ]);
+  });
+
+  it('fails clearly on an aicon-studio.json without a target', async () => {
+    const dir = tmpDir();
+    fs.writeFileSync(path.join(dir, 'aicon-studio.json'), '{ "icons": [] }\n');
     const { code, stderr } = await studio([dir, '--port', String(await freePort())], ROOT);
 
-    expect([code, stderr.trim()]).toEqual([1, `no aicon-studio.json in ${dir}`]);
+    expect([code, stderr.trim()]).toEqual([1, 'aicon-studio.json needs a target']);
   });
 
   it('fails clearly when the port is in use', async () => {
@@ -75,6 +97,20 @@ describe('aicon-studio', () => {
     await new Promise<void>((resolve) => holder.listen(port, '127.0.0.1', () => resolve()));
     const { code, stderr } = await studio(['example', '--port', String(port)], ROOT).finally(() => holder.close());
 
-    expect([code, stderr.trim()]).toEqual([1, `port ${port} is in use, pass --port`]);
+    expect([code, stderr.trim()]).toEqual([1, `port ${port} is in use, pass another --port`]);
+  });
+
+  it('moves on to the next free port when 54400 is taken', async () => {
+    const holder = await hold(54400);
+    const { child, stdout, stderr } = await studio([tmpDir()], ROOT);
+    const port = Number(/127\.0\.0\.1:(\d+)/.exec(stdout)?.[1] ?? 0);
+    try {
+      const status = port ? (await request(port, 'GET', '/api/state')).status : stderr.trim();
+
+      expect([port > 54400, status]).toEqual([true, 200]);
+    } finally {
+      holder?.close();
+      await stop(child);
+    }
   });
 });

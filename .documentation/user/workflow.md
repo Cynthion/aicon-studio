@@ -44,14 +44,16 @@ A drawn icon is drawn by the next run, or into a set by **Complete set**. A rota
 
 **Project** in the top bar shows the folder the studio runs against and opens another one.
 
-| Control    | Does                                                                                                |
-| :--------- | :-------------------------------------------------------------------------------------------------- |
-| **Recent** | The folders opened before in this browser; a click opens one, ✕ forgets it                          |
-| **Folder** | A path, typed or chosen with **Browse…**, which opens the folder picker of the operating system     |
-| **Open**   | Switches every view to the icons, styles, references and sets of the folder                         |
-| **Create** | Writes an empty `aicon-studio.json` into the folder, creating the folder when missing, and opens it |
+| Control    | Does                                                                                            |
+| :--------- | :---------------------------------------------------------------------------------------------- |
+| **Recent** | The folders opened before in this browser; a click opens one, ✕ forgets it                      |
+| **Folder** | A path, typed or chosen with **Browse…**, which opens the folder picker of the operating system |
+| **Open**   | Switches every view to the icons, styles, references and sets of the folder                     |
+| **Create** | Writes the example project into the folder, creating the folder when missing, and opens it      |
 
-The settings stay, because they belong to the user and not to the project. A folder without `aicon-studio.json` is refused, and nothing switches while a drawing job runs. A created project has `./icons` as target until the file is edited, see [Project Folder](project-folder.md).
+The settings stay, because they belong to the user and not to the project. **Open** refuses a folder without `aicon-studio.json`, and nothing switches while a drawing job runs. The example project holds six icons and six styles to start from, with `./icons` as target until the file is edited, see [Project Folder](project-folder.md); a style the folder already holds stays.
+
+Without a project, such as when the command names a folder without `aicon-studio.json`, the page opens **Project** with that folder filled in. Closed, it leaves **No project is open** with a **Project** button that opens it again.
 
 ---
 

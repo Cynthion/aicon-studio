@@ -30,7 +30,7 @@ export class ProjectDialogComponent {
   );
   protected readonly browsing = signal(false);
   protected readonly error = signal<string | undefined>(undefined);
-  protected readonly model = signal<ProjectModel>({ dir: this.studio.state()?.project ?? '' });
+  protected readonly model = signal<ProjectModel>({ dir: this.studio.state()?.project ?? this.studio.folder() ?? '' });
   protected readonly form = form(
     this.model,
     schema<ProjectModel>((path) => required(path.dir, { message: 'Enter the folder that holds aicon-studio.json' })),

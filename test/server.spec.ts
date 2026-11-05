@@ -8,6 +8,7 @@ import { readSettings, writeSettings, type Settings } from '../src/settings.ts';
 import {
   close,
   COMPLETE_SETTINGS,
+  EXAMPLE,
   fileList,
   FIXTURES,
   ICONS,
@@ -19,7 +20,7 @@ import {
   readJson,
   request,
   SET_FILES,
-  SHARP_PROMPT,
+  BAUHAUS_PROMPT,
   tmpDir,
   type Reply
 } from './helpers.ts';
@@ -39,7 +40,7 @@ const start = async (options: Parameters<typeof makeProject>[0] = {}, settings?:
   ({ dir, project } = makeProject({ sets: [SET], ...options }));
   settingsFile = makeSettingsFile(settings);
   page = makePage();
-  server = createServer(project, settingsFile, page);
+  server = createServer(dir, settingsFile, page);
   port = await listen(server);
 };
 const api = (method: string, url: string, body?: unknown): Promise<Reply> => request(port, method, url, { body });
@@ -788,7 +789,7 @@ describe('project', () => {
   it('writes into the new project', async () => {
     const other = makeProject();
     await api('PUT', '/api/project', { dir: other.dir });
-    await api('PUT', '/api/styles/bold', { prompt: SHARP_PROMPT });
+    await api('PUT', '/api/styles/bold', { prompt: BAUHAUS_PROMPT });
 
     expect([other.dir, dir].map((d) => fs.existsSync(path.join(d, 'styles', 'bold.md')))).toEqual([true, false]);
   });
@@ -810,7 +811,7 @@ describe('project', () => {
     expect([reply.status, (await state())['project']]).toEqual([400, dir]);
   });
 
-  it('creates a project in a new folder and switches to it', async () => {
+  it('creates the example project in a new folder and switches to it', async () => {
     const created = path.join(tmpDir(), 'studio');
     const reply = await api('POST', '/api/project', { dir: created });
     const switched = await state();
@@ -819,9 +820,30 @@ describe('project', () => {
       reply.status,
       readJson(path.join(created, CONFIG_FILE)),
       switched['project'],
-      switched['styles'],
+      (switched['styles'] as { name: string }[]).map((s) => s.name).sort(),
       switched['sets']
-    ]).toEqual([200, { target: './icons', quality: 'medium', icons: [] }, created, [], []]);
+    ]).toEqual([
+      200,
+      readJson(path.join(EXAMPLE, CONFIG_FILE)),
+      created,
+      ['baimiao', 'bauhaus', 'botanical', 'manga', 'sketch', 'soft'],
+      []
+    ]);
+  });
+
+  it('keeps a style the folder already holds', async () => {
+    const created = tmpDir();
+    fs.mkdirSync(path.join(created, 'styles'));
+    fs.writeFileSync(path.join(created, 'styles', 'soft.md'), '# Mine {subject}\n');
+    await api('POST', '/api/project', { dir: created });
+
+    expect([
+      read(path.join(created, 'styles', 'soft.md')),
+      fs.readdirSync(path.join(created, 'styles')).sort()
+    ]).toEqual([
+      '# Mine {subject}\n',
+      ['baimiao.md', 'bauhaus.md', 'botanical.md', 'manga.md', 'sketch.md', 'soft.md']
+    ]);
   });
 
   it('refuses to create a project where one is', async () => {
@@ -839,5 +861,40 @@ describe('project', () => {
       'a project folder is an absolute path',
       dir
     ]);
+  });
+});
+
+describe('no project', () => {
+  beforeEach(async () => {
+    dir = tmpDir();
+    settingsFile = makeSettingsFile();
+    page = makePage();
+    server = createServer(dir, settingsFile, page);
+    port = await listen(server);
+  });
+
+  it('shows no project while none is open', async () => {
+    const reply = await api('GET', '/api/state');
+
+    expect([reply.status, reply.json]).toEqual([200, { project: null, folder: dir }]);
+  });
+
+  it('refuses a route that needs a project while none is open', async () => {
+    const replies = await Promise.all([
+      api('PUT', '/api/styles/bold', { prompt: BAUHAUS_PROMPT }),
+      api('POST', '/api/runs', { styles: ['soft'], quality: 'medium' }),
+      api('GET', '/files/icons/home.svg')
+    ]);
+
+    expect(replies.map((r) => [r.status, r.json['error']])).toEqual(
+      Array(3).fill([409, 'no project is open, open or create one under Project'])
+    );
+  });
+
+  it('opens a project while none is open', async () => {
+    const other = makeProject();
+    const reply = await api('PUT', '/api/project', { dir: other.dir });
+
+    expect([reply.status, (await state())['project']]).toEqual([200, other.dir]);
   });
 });

@@ -2,7 +2,10 @@
   #dialog
   headline="Project"
   (closed)="studio.dialog.set(undefined)">
-  <p class="hint">The folder that holds aicon-studio.json. Open switches every view to it, Create writes an empty one there first; the settings stay.</p>
+  <p class="hint">
+    The folder that holds aicon-studio.json. Open switches every view to it. Create starts one there from the example project, six icons and six styles, usually
+    in a folder of the repository whose icons it draws. The settings stay.
+  </p>
   @if (recent().length) {
     <h3>Recent</h3>
     <ul class="recent">

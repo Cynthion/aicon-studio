@@ -16,13 +16,15 @@
     "aicon-studio": "dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "example/aicon-studio.json",
+    "example/styles"
   ],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "start": "node src/cli.ts example & ng serve",
+    "start": "node src/cli.ts example --port 54400 & ng serve",
     "build": "tsc -p tsconfig.build.json && ng build",
     "test": "vitest run && ng test --no-watch",
     "lint": "eslint .",

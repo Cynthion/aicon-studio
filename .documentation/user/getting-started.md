@@ -23,9 +23,11 @@ node <clone>/dist/cli.js <project> [--port 54400]
 | Argument  | Meaning                                                                                                                                 |
 | :-------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
 | `project` | The folder that holds `aicon-studio.json`; the working directory when left out. **Project** in the top bar opens or creates another one |
-| `--port`  | The port the studio listens on, so a second project runs beside the first                                                               |
+| `--port`  | The port the studio listens on; when left out, `54400` or the next free port after it, so a second studio starts beside the first       |
 
-The command fails with `no aicon-studio.json in <folder>` when the folder is not a project, and with `port 54400 is in use, pass --port` when another studio holds the port.
+A folder without `aicon-studio.json` starts the studio without a project: the page opens **Project** with that folder filled in, see [Workflow](workflow.md). A port given with `--port` that another program holds fails the command with `port <port> is in use, pass another --port`.
+
+> **Note:** **Recent** and the switches of the page are kept per port, so a studio on another port starts without them.
 
 - **From Another Repository**: a repository that uses the studio adds the clone as a `file:` dev dependency, `"@cynthion/aicon-studio": "file:../aicon-studio"`, and a script such as `"icons:studio": "aicon-studio path/to/project"`. `npm install` links the clone, so the script runs the clone's `dist/`, and `npm ci` passes even where the clone is absent, such as in CI.
 
@@ -64,7 +66,7 @@ The two prices show what a run costs before it starts. They set no limit, and th
 The clone holds an example project, `example/`, with icons and styles.
 
 1. Run `node dist/cli.js example` in the clone.
-2. Open `http://127.0.0.1:54400`.
+2. Open the URL the command prints, `http://127.0.0.1:54400` unless that port is taken.
 3. Choose **Settings**.
 4. Enter the base URL, the API key and both models.
 5. Choose **Save**.

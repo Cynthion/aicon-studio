@@ -1,6 +1,6 @@
 {
   "name": "@cynthion/aicon-studio",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Draws candidate icon sets with an image model, compares them and adopts one into your project.",
   "license": "GPL-2.0-only",
   "author": "Christian Lüthold",
@@ -25,7 +25,7 @@
   },
   "scripts": {
     "start": "node src/cli.ts example --port 54400 & ng serve",
-    "build": "tsc -p tsconfig.build.json && ng build",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && ng build",
     "test": "vitest run && ng test --no-watch",
     "lint": "eslint .",
     "prettier:check": "prettier --check .",

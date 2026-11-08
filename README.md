@@ -9,20 +9,14 @@ Draws candidate icon sets for your app with an image model, compares them side b
 
 ## Quick Start
 
-Needs Node, the repository cloned beside your project, and Playwright's Chromium, which rasterizes the fills:
+Needs Node and Playwright's Chromium, which rasterizes the fills. Install Chromium once, then start the studio on a new folder:
 
 ```bash
-git clone https://github.com/Cynthion/aicon-studio.git
-cd aicon-studio && npm ci && npx playwright install chromium && npm run build
+npx -p @cynthion/aicon-studio playwright install chromium
+npx @cynthion/aicon-studio my-icons
 ```
 
-Then serve the example project and open the URL it prints, `http://127.0.0.1:54400` unless that port is taken:
-
-```bash
-node dist/cli.js example
-```
-
-Enter your endpoint, API key and models under **Settings**, choose **New run** and pick a style. The whole setup, the project folder contract and the workflow are in the documentation below.
+Open the URL it prints, `http://127.0.0.1:54400` unless that port is taken, and choose **Create** to write the example project into `my-icons`. Enter your endpoint, API key and models under **Settings**, choose **New run** and pick a style. The whole setup, the project folder contract and the workflow are in the documentation below.
 
 ## Documentation
 

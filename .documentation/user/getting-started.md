@@ -4,21 +4,14 @@ Install the studio, enter the endpoint once, and draw the example project. What 
 
 ## Install
 
-The studio is not published yet, so it runs from a clone. It needs Node, the version in `.nvmrc`, and Playwright's Chromium, see [Playwright browsers](https://playwright.dev/docs/browsers):
+The studio needs Node, the version `engines` in its `package.json` names, and Playwright's Chromium, which rasterizes the fills, see [Playwright browsers](https://playwright.dev/docs/browsers). Chromium is installed once per computer, then `npx` runs the studio:
 
 ```bash
-git clone https://github.com/Cynthion/aicon-studio.git
-cd aicon-studio
-npm ci
-npx playwright install chromium
-npm run build
+npx -p @cynthion/aicon-studio playwright install chromium
+npx @cynthion/aicon-studio <project> [--port 54400]
 ```
 
-`npm run build` writes `dist/`, which holds the command. It runs from anywhere:
-
-```bash
-node <clone>/dist/cli.js <project> [--port 54400]
-```
+> **Note:** `-p @cynthion/aicon-studio` installs the Chromium of the Playwright version the studio uses. A bare `npx playwright` may fetch another version, whose Chromium the studio does not find. Its warning about the dependencies of the current folder does not apply.
 
 | Argument  | Meaning                                                                                                                                 |
 | :-------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
@@ -29,7 +22,7 @@ A folder without `aicon-studio.json` starts the studio without a project: the pa
 
 > **Note:** **Recent** and the switches of the page are kept per port, so a studio on another port starts without them.
 
-- **From Another Repository**: a repository that uses the studio adds the clone as a `file:` dev dependency, `"@cynthion/aicon-studio": "file:../aicon-studio"`, and a script such as `"icons:studio": "aicon-studio path/to/project"`. `npm install` links the clone, so the script runs the clone's `dist/`, and `npm ci` passes even where the clone is absent, such as in CI.
+- **From Another Repository**: a repository that uses the studio adds it as a dev dependency, `npm install --save-dev @cynthion/aicon-studio`, and a script such as `"icons:studio": "aicon-studio path/to/project"`. The version in its `package.json` decides which studio the script runs.
 
 > **Note:** The studio is reachable from the same computer only. A page open in another tab cannot start a run or adopt a set.
 
@@ -63,18 +56,19 @@ The two prices show what a run costs before it starts. They set no limit, and th
 
 ## The First Run
 
-The clone holds an example project, `example/`, with icons and styles.
+**Create** writes the example project, with icons and styles, into a new folder.
 
-1. Run `node dist/cli.js example` in the clone.
+1. Run `npx @cynthion/aicon-studio my-icons`.
 2. Open the URL the command prints, `http://127.0.0.1:54400` unless that port is taken.
-3. Choose **Settings**.
-4. Enter the base URL, the API key and both models.
-5. Choose **Save**.
-6. Choose **New run**.
-7. Tick a style under **Styles**.
-8. Choose **Start run**.
+3. Choose **Create** in **Project**, which opens with `my-icons` filled in.
+4. Choose **Settings**.
+5. Enter the base URL, the API key and both models.
+6. Choose **Save**.
+7. Choose **New run**.
+8. Tick a style under **Styles**.
+9. Choose **Start run**.
 
-Every icon is drawn once in that style, into a set under `example/runs/`, which `.gitignore` leaves out. The **Sets** view shows each icon as soon as it is drawn, as an outline beside its fill. **Adopt into ./icons…** in the set's column menu copies the files into `example/icons/`, the target the example names.
+Every icon is drawn once in that style, into a set under `my-icons/runs/`. The **Sets** view shows each icon as soon as it is drawn, as an outline beside its fill. **Adopt into ./icons…** in the set's column menu copies the files into `my-icons/icons/`, the target the example names.
 
 ---
 

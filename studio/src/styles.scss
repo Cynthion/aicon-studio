@@ -1,7 +1,6 @@
 // The studio's theme and the controls every view shares. A component styles only what is its own.
 @use '@cynthion/ngx-formidable/styles/ngx-formidable';
 
-// EnerQi's Ocean Pearl palette in EnerQi's roles: accent is the fill, strong its hover, emphasis the tint behind a selection
 :root {
   --bg: #eff4f6;
   --card: #ffffff;

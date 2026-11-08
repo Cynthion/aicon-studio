@@ -15,7 +15,7 @@ Conventions for the Angular studio page: where a component lives, what it is cal
 - **Menus**: `@angular/aria` Menu, through `studio-ui-item-menu`. Dialogs are the native `<dialog>`, through `studio-ui-dialog`.
 - **Guidance**: the page itself shows how to use the studio. A control or field that needs an explanation carries a hint beside it, and a state that blocks the work names what is missing and offers the control that leads there, never a dead end.
 - **Routing**: hash routes, `#/icons`, `#/styles`, `#/sets`, so the server serves `/` alone.
-- **Development**: `npm start` serves the studio over `example` on `54400` and the page with hot reload on `http://localhost:54410`, which `studio/proxy.conf.json` forwards `/api` and `/files` to the studio. `Ctrl+C` stops both. The script needs a POSIX shell; on Windows, `node src/cli.ts example` and `ng serve` run in two terminals.
+- **Development**: `npm start` serves the studio over `example` on `54400`, passed as `--port` so that a taken port fails instead of moving on, and the page with hot reload on `http://localhost:54410`, which `studio/proxy.conf.json` forwards `/api` and `/files` to the studio. `Ctrl+C` stops both. The script needs a POSIX shell; on Windows, `node src/cli.ts example` and `ng serve` run in two terminals.
 
 ---
 

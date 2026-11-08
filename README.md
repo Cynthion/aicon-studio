@@ -16,7 +16,7 @@ git clone https://github.com/Cynthion/aicon-studio.git
 cd aicon-studio && npm ci && npx playwright install chromium && npm run build
 ```
 
-Then serve the example project and open `http://127.0.0.1:54400`:
+Then serve the example project and open the URL it prints, `http://127.0.0.1:54400` unless that port is taken:
 
 ```bash
 node dist/cli.js example

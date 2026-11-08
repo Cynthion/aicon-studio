@@ -52,14 +52,14 @@ Every command runs from the repository root. **Publish**, **Tag** and **Release*
    npm login
    ```
 
-3. **Build**: `npm run build` writes `dist/`, the only directory the package ships. The pack list holds the command and the page it serves:
+3. **Build**: `npm run build` writes `dist/`, which the package ships with the example project that **Create** copies. The pack list holds the command, the page it serves and the example project:
 
    ```zsh
    npm run build
    npm pack --dry-run
    ```
 
-   The list names `dist/cli.js`, the `bin`, and `dist/studio/browser/index.html`, beside `package.json`, `README.md` and `LICENSE`.
+   The list names `dist/cli.js`, the `bin`, `dist/studio/browser/index.html`, `example/aicon-studio.json` and the styles under `example/styles/`, beside `package.json`, `README.md` and `LICENSE`.
 
 4. **Publish**: By hand. `npm publish` publishes the root package with public access, set by `publishConfig`. It may log a `401` before the OTP prompt, then `PUT 202`: the registry processes the upload for a few minutes.
 

@@ -48,6 +48,10 @@ export class AppComponent {
   });
 
   constructor() {
-    void this.studio.reload();
+    void this.studio.reload().then(() => {
+      if (this.studio.folder()) {
+        this.studio.dialog.set('project');
+      }
+    });
   }
 }

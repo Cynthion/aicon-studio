@@ -50,6 +50,7 @@ const TYPES: Partial<Record<string, string>> = {
 };
 const NAME = /^[\w-]+$/;
 const INCOMPLETE = 'Enter the base URL, API key and models in Settings';
+const NO_PROJECT = 'no project is open, open or create one under Project';
 
 class HttpError extends Error {
   readonly status: number;
@@ -155,22 +156,29 @@ const versions = (dir: string): Record<string, number> =>
 type Body = Record<string, unknown>;
 type Route = [string, RegExp, (match: string[], body: Body) => unknown];
 
-/** The studio server over a project: the page in `page`, its files and the JSON API. Not listening yet. */
-export const createServer = (initial: Project, settingsFile: string, page = PAGE): http.Server => {
-  let project = initial;
+/** The studio server over the project in `folder`, or over none until one is opened: the page in `page`, its files and the JSON API. Not listening yet. */
+export const createServer = (folder: string, settingsFile: string, page = PAGE): http.Server => {
+  const startFolder = path.resolve(folder);
+  let opened = fs.existsSync(path.join(startFolder, CONFIG_FILE)) ? resolveProject(startFolder) : undefined;
   let job: (Job & { kind: string; running: boolean; error?: string }) | undefined;
 
+  /** The open project; every route that needs one is refused while none is open. */
+  const project = (): Project => {
+    check(opened, NO_PROJECT, 409);
+    return opened!;
+  };
+
   const knownSet = (set: unknown): string => {
-    check(typeof set === 'string' && sets(project).includes(set), `unknown set: ${String(set)}`);
+    check(typeof set === 'string' && sets(project()).includes(set), `unknown set: ${String(set)}`);
     return set as string;
   };
   const busy = (): void => check(!job?.running, 'a drawing job is running, wait for it', 409);
   /** The column directory: the target as `icons`, or a set. */
-  const columnDir = (col: unknown): string => (col === 'icons' ? project.target : setDir(project, knownSet(col)));
+  const columnDir = (col: unknown): string => (col === 'icons' ? project().target : setDir(project(), knownSet(col)));
   /** The outline file of a drawn icon in the target, `icons`, or in a set. */
   const drawnOutline = (set: unknown, stem: unknown): string => {
     check(
-      readConfig(project).icons.some((icon) => icon.stem === stem && isDrawn(icon)),
+      readConfig(project()).icons.some((icon) => icon.stem === stem && isDrawn(icon)),
       `${String(stem)} is not a drawn icon`
     );
     const file = path.join(columnDir(set), `${String(stem)}.svg`);
@@ -188,25 +196,33 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
     Object.fromEntries(
       stems.map((stem) => [
         stem,
-        ['icons', ...sets(project)].filter(
-          (col) => read(path.join(columnDir(col), `${stem}.svg`)) === read(path.join(project.references, `${stem}.svg`))
+        ['icons', ...sets(project())].filter(
+          (col) =>
+            read(path.join(columnDir(col), `${stem}.svg`)) === read(path.join(project().references, `${stem}.svg`))
         )
       ])
     );
 
   const state = (): object => {
-    const config = readConfig(project);
-    const references = versions(project.references);
+    if (!opened) {
+      return { project: null, folder: startFolder };
+    }
+    const config = readConfig(project());
+    const references = versions(project().references);
     return {
-      project: project.dir,
+      project: project().dir,
       config,
       target: config.target,
-      styles: readStyles(project),
+      styles: readStyles(project()),
       referencePrompt: REFERENCE_PROMPT,
-      icons: versions(project.target),
+      icons: versions(project().target),
       references,
       referencedIn: referencedIn(Object.keys(references)),
-      sets: sets(project).map((set) => ({ set, info: readSet(project, set), files: versions(setDir(project, set)) })),
+      sets: sets(project()).map((set) => ({
+        set,
+        info: readSet(project(), set),
+        files: versions(setDir(project(), set))
+      })),
       settings: publicSettings(readSettings(settingsFile)),
       job
     };
@@ -231,7 +247,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
         busy();
         check(typeof dir === 'string' && path.isAbsolute(dir), 'a project folder is an absolute path');
         try {
-          project = resolveProject(dir as string);
+          opened = resolveProject(dir as string);
         } catch (e) {
           throw new HttpError(400, (e as Error).message);
         }
@@ -245,26 +261,26 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
         busy();
         check(typeof dir === 'string' && path.isAbsolute(dir), 'a project folder is an absolute path');
         check(!fs.existsSync(path.join(dir as string, CONFIG_FILE)), `already a project: ${dir as string}`);
-        project = createProject(dir as string);
+        opened = createProject(dir as string);
         job = undefined;
       }
     ],
-    ['POST', /^\/api\/pick-folder$/, async () => ({ dir: (await pickFolder(project.dir)) ?? null })],
+    ['POST', /^\/api\/pick-folder$/, async () => ({ dir: (await pickFolder(opened?.dir ?? startFolder)) ?? null })],
     [
       'PUT',
       /^\/api\/styles\/([\w-]+)$/,
       ([name], { prompt }) => {
         checkPrompt(prompt);
-        fs.mkdirSync(project.styles, { recursive: true });
-        fs.writeFileSync(path.join(project.styles, `${name}.md`), `${(prompt as string).trim()}\n`);
+        fs.mkdirSync(project().styles, { recursive: true });
+        fs.writeFileSync(path.join(project().styles, `${name}.md`), `${(prompt as string).trim()}\n`);
       }
     ],
     [
       'DELETE',
       /^\/api\/styles\/([\w-]+)$/,
       ([name]) => {
-        check(fs.existsSync(path.join(project.styles, `${name}.md`)), `unknown style: ${name}`);
-        fs.rmSync(path.join(project.styles, `${name}.md`));
+        check(fs.existsSync(path.join(project().styles, `${name}.md`)), `unknown style: ${name}`);
+        fs.rmSync(path.join(project().styles, `${name}.md`));
       }
     ],
     [
@@ -272,14 +288,14 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
       /^\/api\/runs$/,
       (_, { styles, quality, stems }) => {
         check(Array.isArray(styles) && styles.length, 'choose at least one style');
-        const known = readStyles(project).map((style) => style.name);
+        const known = readStyles(project()).map((style) => style.name);
         check(
           (styles as unknown[]).every((style) => known.includes(style as string)),
           'choose known styles'
         );
         check(['low', 'medium', 'high'].includes(quality as string), 'quality is low, medium or high');
         // a test run: only the chosen drawn icons, and their rotations
-        const drawn = readConfig(project)
+        const drawn = readConfig(project())
           .icons.filter(isDrawn)
           .map((icon) => icon.stem);
         check(
@@ -291,7 +307,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
           'choose drawn icons of aicon-studio.json, each once'
         );
         const stored = settings('imageModel');
-        begin('run', (j) => startRun(project, stored, styles as string[], quality as string, j, stems as string[]));
+        begin('run', (j) => startRun(project(), stored, styles as string[], quality as string, j, stems as string[]));
       }
     ],
     [
@@ -311,7 +327,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
           knownSet(set);
         }
         const stored = settings('imageModel');
-        begin('redraw', (j) => redraw(project, stored, work as Work[], j));
+        begin('redraw', (j) => redraw(project(), stored, work as Work[], j));
       }
     ],
     [
@@ -319,11 +335,11 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
       /^\/api\/subjects\/([\w-]+)$/,
       ([stem], { subject }) => {
         check(
-          readConfig(project).icons.some((icon) => icon.stem === stem && isDrawn(icon)),
+          readConfig(project()).icons.some((icon) => icon.stem === stem && isDrawn(icon)),
           `${stem} is not a drawn icon`
         );
         check(typeof subject === 'string' && subject.trim(), 'a subject must not be empty');
-        updateConfig(project, (config) => ({
+        updateConfig(project(), (config) => ({
           ...config,
           icons: config.icons.map((icon) =>
             icon.stem === stem ? { ...icon, subject: (subject as string).trim() } : icon
@@ -336,7 +352,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
       /^\/api\/icons$/,
       (_, { stem, subject, from, rotate, icons: list }) => {
         busy();
-        const icons = readConfig(project).icons;
+        const icons = readConfig(project()).icons;
         if (from === undefined) {
           // one drawn icon, or a pasted list of them: all or none
           const added = (list ?? [{ stem, subject }]) as { stem: unknown; subject: unknown }[];
@@ -345,7 +361,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
             checkStem(icon.stem, [...icons, ...added.slice(0, i)]);
             check(typeof icon.subject === 'string' && icon.subject.trim(), 'a subject must not be empty');
           });
-          updateConfig(project, (config) => ({
+          updateConfig(project(), (config) => ({
             ...config,
             icons: [
               ...config.icons,
@@ -361,8 +377,8 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
         );
         check([90, 180, 270].includes(rotate as number), 'a rotation turns by 90, 180 or 270 degrees');
         const rotation: Rotated = { stem: stem as string, from: from as string, rotate: rotate as number };
-        updateConfig(project, (config) => ({ ...config, icons: [...config.icons, rotation] }));
-        sets(project).forEach((set) => writeRotation(project, set, rotation));
+        updateConfig(project(), (config) => ({ ...config, icons: [...config.icons, rotation] }));
+        sets(project()).forEach((set) => writeRotation(project(), set, rotation));
       }
     ],
     [
@@ -370,16 +386,16 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
       /^\/api\/icons\/([\w-]+)$/,
       ([stem]) => {
         busy();
-        const icons = readConfig(project).icons;
+        const icons = readConfig(project()).icons;
         check(
           icons.some((icon) => icon.stem === stem),
           `unknown icon: ${stem}`
         );
         const rotations = icons.filter((icon) => !isDrawn(icon) && icon.from === stem).map((icon) => icon.stem);
         check(!rotations.length, `remove the rotations of ${stem} first: ${rotations.join(', ')}`);
-        updateConfig(project, (config) => ({ ...config, icons: config.icons.filter((icon) => icon.stem !== stem) }));
+        updateConfig(project(), (config) => ({ ...config, icons: config.icons.filter((icon) => icon.stem !== stem) }));
         // the sets and the target keep their files: a set records a run, the target what was adopted
-        fs.rmSync(path.join(project.references, `${stem}.svg`), { force: true });
+        fs.rmSync(path.join(project().references, `${stem}.svg`), { force: true });
       }
     ],
     [
@@ -387,7 +403,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
       /^\/api\/icons\/([\w-]+)$/,
       ([stem], { stem: to }) => {
         busy();
-        const icons = readConfig(project).icons;
+        const icons = readConfig(project()).icons;
         check(
           icons.some((icon) => icon.stem === stem),
           `unknown icon: ${stem}`
@@ -400,7 +416,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
               .filter(([s]) => s !== to)
               .map(([s, v]) => [name(s), v])
           );
-        updateConfig(project, (config) => ({
+        updateConfig(project(), (config) => ({
           ...config,
           icons: config.icons.map((icon) =>
             isDrawn(icon)
@@ -415,13 +431,13 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
             fs.renameSync(file, path.join(dir, `${to as string}${suffix}.svg`));
           }
         };
-        move(project.references);
-        for (const dir of [project.target, ...sets(project).map((set) => setDir(project, set))]) {
+        move(project().references);
+        for (const dir of [project().target, ...sets(project()).map((set) => setDir(project(), set))]) {
           move(dir);
           move(dir, '-filled');
         }
-        for (const set of sets(project)) {
-          updateSet(project, set, (info) => ({
+        for (const set of sets(project())) {
+          updateSet(project(), set, (info) => ({
             ...info,
             icons: info.icons.filter((icon) => icon.stem !== to).map((icon) => ({ ...icon, stem: name(icon.stem) })),
             failed: info.failed.filter((s) => s !== to).map(name),
@@ -436,7 +452,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
       /^\/api\/icons$/,
       (_, { order }) => {
         busy();
-        const icons = readConfig(project).icons;
+        const icons = readConfig(project()).icons;
         check(
           Array.isArray(order) &&
             order.length === icons.length &&
@@ -444,7 +460,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
             icons.every((icon) => order.includes(icon.stem)),
           'the order names every icon once'
         );
-        updateConfig(project, (config) => ({
+        updateConfig(project(), (config) => ({
           ...config,
           icons: (order as string[]).map((stem) => config.icons.find((icon) => icon.stem === stem)!)
         }));
@@ -455,16 +471,16 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
       /^\/api\/references\/([\w-]+)$/,
       ([stem], { set }) => {
         const from = drawnOutline(set, stem);
-        fs.mkdirSync(project.references, { recursive: true });
-        fs.copyFileSync(from, path.join(project.references, `${stem}.svg`));
+        fs.mkdirSync(project().references, { recursive: true });
+        fs.copyFileSync(from, path.join(project().references, `${stem}.svg`));
       }
     ],
     [
       'DELETE',
       /^\/api\/references\/([\w-]+)$/,
       ([stem]) => {
-        check(fs.existsSync(path.join(project.references, `${stem}.svg`)), `${stem} is not referenced`);
-        fs.rmSync(path.join(project.references, `${stem}.svg`));
+        check(fs.existsSync(path.join(project().references, `${stem}.svg`)), `${stem} is not referenced`);
+        fs.rmSync(path.join(project().references, `${stem}.svg`));
       }
     ],
     [
@@ -472,7 +488,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
       /^\/api\/describe$/,
       async (_, { set, stem }) => {
         const file = drawnOutline(set, stem);
-        const icon = readConfig(project)
+        const icon = readConfig(project())
           .icons.filter(isDrawn)
           .find((i) => i.stem === stem)!;
         return { subject: await describe(settings('describeModel'), file, icon.stem, icon.subject) };
@@ -489,11 +505,11 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
           return { prompt: await rephrase(settings('describeModel'), prompt as string, why) };
         }
         // a subject, with the style of the set it was drawn in
-        const icon = readConfig(project)
+        const icon = readConfig(project())
           .icons.filter(isDrawn)
           .find((i) => i.stem === stem);
         check(icon, `${stem as string} is not a drawn icon`);
-        const style = set === undefined ? undefined : readSet(project, knownSet(set)).prompt;
+        const style = set === undefined ? undefined : readSet(project(), knownSet(set)).prompt;
         return { subject: await rephraseSubject(settings('describeModel'), icon!.subject, why, style) };
       }
     ],
@@ -504,18 +520,18 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
         busy();
         const known = knownSet(set);
         check(
-          readSet(project, known).icons.some((icon) => icon.stem === stem),
+          readSet(project(), known).icons.some((icon) => icon.stem === stem),
           `${String(stem)} is not drawn in ${known}`
         );
         check(
           Array.isArray(points) && points.every((p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite)),
           'points are [x, y] pairs'
         );
-        updateSet(project, known, (info) => ({
+        updateSet(project(), known, (info) => ({
           ...info,
           flips: { ...info.flips, [stem as string]: points as [number, number][] }
         }));
-        await refill(project, known, [stem as string]);
+        await refill(project(), known, [stem as string]);
       }
     ],
     [
@@ -524,9 +540,9 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
       ([run, style]) => {
         busy();
         const set = knownSet(`${run}/${style}`);
-        fs.rmSync(setDir(project, set), { recursive: true });
-        if (!fs.readdirSync(path.join(project.runs, run)).length) {
-          fs.rmdirSync(path.join(project.runs, run));
+        fs.rmSync(setDir(project(), set), { recursive: true });
+        if (!fs.readdirSync(path.join(project().runs, run)).length) {
+          fs.rmdirSync(path.join(project().runs, run));
         }
       }
     ],
@@ -535,10 +551,10 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
       /^\/api\/adopt$/,
       (_, { set }) => {
         busy();
-        const dir = setDir(project, knownSet(set));
-        fs.mkdirSync(project.target, { recursive: true });
+        const dir = setDir(project(), knownSet(set));
+        fs.mkdirSync(project().target, { recursive: true });
         for (const file of fs.readdirSync(dir).filter((f) => f.endsWith('.svg'))) {
-          fs.copyFileSync(path.join(dir, file), path.join(project.target, file));
+          fs.copyFileSync(path.join(dir, file), path.join(project().target, file));
         }
       }
     ],
@@ -583,7 +599,7 @@ export const createServer = (initial: Project, settingsFile: string, page = PAGE
       return undefined;
     }
     const [root, ...rest] = parts;
-    const dir = { icons: project.target, sets: project.runs, references: project.references }[root];
+    const dir = { icons: project().target, sets: project().runs, references: project().references }[root];
     return dir ? path.join(dir, ...rest) : undefined;
   };
 

@@ -1,8 +1,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** The file that makes a folder a project. */
 export const CONFIG_FILE = 'aicon-studio.json';
+/** The example project, which Create copies; `../example/` resolves the same from `src/` and from `dist/`. */
+const EXAMPLE = fileURLToPath(new URL('../example/', import.meta.url));
 
 /** An icon drawn from a subject, written as <stem>.svg and <stem>-filled.svg. */
 export interface Drawn {
@@ -49,12 +52,17 @@ export const readConfig = (project: Pick<Project, 'file'>): Config => {
 export const updateConfig = (project: Project, change: (config: Config) => Config): void =>
   fs.writeFileSync(project.file, `${JSON.stringify(change(readConfig(project)), null, 2)}\n`);
 
-/** Writes an empty aicon-studio.json into `folder`, created when missing, and answers the project. */
+/** Writes the example project's aicon-studio.json and styles into `folder`, created when missing, and answers the project. A style the folder holds stays. */
 export const createProject = (folder: string): Project => {
   const dir = path.resolve(folder);
-  const config: Config = { target: './icons', quality: 'medium', icons: [] };
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, CONFIG_FILE), `${JSON.stringify(config, null, 2)}\n`);
+  fs.mkdirSync(path.join(dir, 'styles'), { recursive: true });
+  fs.copyFileSync(path.join(EXAMPLE, CONFIG_FILE), path.join(dir, CONFIG_FILE));
+  for (const style of fs.readdirSync(path.join(EXAMPLE, 'styles'))) {
+    const file = path.join(dir, 'styles', style);
+    if (!fs.existsSync(file)) {
+      fs.copyFileSync(path.join(EXAMPLE, 'styles', style), file);
+    }
+  }
   return resolveProject(dir);
 };
 

@@ -1,7 +1,7 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { ToastService } from '../ui/toast/toast.service';
-import type { State } from './api.model';
+import type { NoProject, State } from './api.model';
 import { ApiService } from './api.service';
 import { folderName, messageOf } from './studio.helpers';
 import type { DialogName, Prefs, Rephrasing, Selection, StyleDraft } from './studio.model';
@@ -36,6 +36,8 @@ export class StudioService {
   private readonly title = inject(Title);
 
   readonly state = signal<State | undefined>(undefined);
+  /** The folder the studio was started over, while no project is open. */
+  readonly folder = signal<string | undefined>(undefined);
   readonly prefs = signal<Prefs>(loadPrefs());
   readonly dialog = signal<DialogName | undefined>(undefined);
   readonly selected = signal<Selection | undefined>(undefined);
@@ -70,10 +72,15 @@ export class StudioService {
   async reload(): Promise<void> {
     clearTimeout(this.timer);
     try {
-      const state = await this.api.send<State>('GET', '/api/state');
-      this.state.set(state);
-      this.remember(state.project);
-      this.title.setTitle(`${folderName(state.project)} · Aicon Studio`);
+      const state = await this.api.send<State | NoProject>('GET', '/api/state');
+      if (state.project === null) {
+        this.folder.set(state.folder);
+      } else {
+        this.folder.set(undefined);
+        this.state.set(state);
+        this.remember(state.project);
+        this.title.setTitle(`${folderName(state.project)} · Aicon Studio`);
+      }
     } catch (e) {
       this.toasts.error(messageOf(e));
     }
